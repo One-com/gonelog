@@ -1,0 +1,2 @@
+# gonelog
+Golang logging library
