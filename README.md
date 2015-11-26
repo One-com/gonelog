@@ -1,5 +1,5 @@
 # gonelog
-Golang logging library
+Golang logging library [![GoDoc](https://godoc.org/github.com/one-com/gonelog/log?status.svg)](https://godoc.org/github.com/one-com/gonelog/log)
 
 Package gonelog/log is a drop-in replacement for the standard Go logging library "log" which is fully source code compatible support all the standard library API while at the same time offering advanced logging features through an extended API.
 
