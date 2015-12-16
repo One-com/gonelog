@@ -31,6 +31,12 @@ func Minimal() {
 	defaultLogger.DoTime(false)
 }
 
+// Create a child K/V logger of the default logger
+func With(kv ...interface{}) *Logger {
+	return defaultLogger.With(kv...)
+}
+
+// Clone the default logger
 func Clone(kv ...interface{}) *Logger {
 	return defaultLogger.Clone(kv...)
 }
