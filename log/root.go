@@ -143,7 +143,10 @@ func SetDefaultLevel(level syslog.Priority, respect bool) bool {
 	return defaultLogger.SetDefaultLevel(level, respect)
 }
 
-// Set the log level used by Print*() calls.x
+// Set the log level used by Print*() calls.
+// If the second argument is true, Println(), Printf(), Print() will respect the Logger log level.
+// If the second argument is false, log event will be generated regardless of Logger log level.
+// Handlers and Writers may still filter the event out.
 func SetPrintLevel(level syslog.Priority, respect bool) bool {
 	return defaultLogger.SetPrintLevel(level, respect)
 }

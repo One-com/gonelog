@@ -8,7 +8,7 @@ import (
 )
 
 // Event is the basic log event type.
-// Exported to be able to define Handler interface.
+// Exported to be able to implement Handler interface for external packages.
 // Handlers passed an Event "e" can access e.Lvl, e.Msg, e.Data, e.Name
 type Event struct {
 	*event
@@ -33,11 +33,12 @@ func freePoolEvent(e *event) {
 }
 
 // A log event.
-// Not exported to discourage manual instatiation.
-// Exported fields to allow external Handlers (an formatting Handlers)
+// Not exported to discourage manual instantiation.
+// Exported fields to allow external Handlers (and formatting Handlers)
 // Do *not* instantiate these yourself. They are meant to be immutable once created.
 // There's no method to pass a home-made Event to a Logger and a pandoras box of
 // race conditions open if there were.
+// Also, the event is put back into the pool once logged. It has to come from the pool
 type event struct {
 	Lvl  syslog.Priority // Level this event was logged at.
 	Msg  string          // Basic log message.
@@ -132,11 +133,10 @@ func (l *Logger) calldepthEvent(level syslog.Priority, calldepth int, msg string
 	return e
 }
 
-// Creates a new log event.
-// The difference from just doing &event{} is that:
-// * Lvl is set properly
-// * The event is timestamped if needed
-// * Code info file/line is recorded if needed
+// The primary event constructor. Creates a new log event.
+// The event is timestamped if needed
+// Code info file/line is recorded if needed
+// KV data is gathered from any context parents.
 func (l *Logger) newEvent(level syslog.Priority, msg string, data []interface{}) *event {
 
 	e := getPoolEvent(level, l.name, msg)

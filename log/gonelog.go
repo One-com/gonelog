@@ -58,15 +58,21 @@ const (
 // events and to create sub child loggers with additional K/V data.
 type Logger struct {
 	// This logger is optionally part of a tree based on it's name.
-	//  ("a/b/c") ...placing it in a global hierachy
+	//  ("a/b/c") ...placing it in a global hierachy.
+	// The root Logger of the hierachy is not named.
 	name string
+
+	// pointer to the Logger config.
 	cfg  *lconfig
 
-	// An atomic swapable handle to the loghandler and any name-based parent
+	// An atomic swappable handle to the loghandler and any name-based parent
 	h *swapper
 
-	cparent *Logger       // The Logger is a context-child of another wrt. K/V data. This is *NOT* the name based parent.
-	data    []interface{} // K/V Attributes common to all events logged ... Using a slice instead of map for speed
+	// The Logger is a context-child of another wrt. K/V data created by With(). This is *NOT* the name based parent.
+	cparent *Logger
+
+	// K/V Attributes common to all events logged ... Using a slice instead of map for speed
+	data    []interface{}
 }
 
 // NewLogger creates a new unamed Logger out side of the named Logger hiearchy.
@@ -178,6 +184,7 @@ func (l *Logger) NamedClone(name string, kv ...interface{}) *Logger {
 // allowing changing the handler and having it's own config.
 // This is also different from calling With() in that the new logger is fully its own
 // and that replacing it's config or handler will not affect the parent.
+// The new logger will be unnamed
 func (l *Logger) Clone(kv ...interface{}) *Logger {
 	// Need to handle child context (cparent != nil) differently
 	d := normalize(kv)

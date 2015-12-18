@@ -12,7 +12,7 @@ import (
 
 var ErrNotLogged = errors.New("No handler found to log event")
 
-// using atomic and mutex to support atomic reads, but also read-modify-write ops.
+// Using atomic and mutex to support atomic reads, but also read-modify-write ops.
 type swapper struct {
 	mu  sync.Mutex // Locked by any who want to modify the valueStruct
 	val atomic.Value

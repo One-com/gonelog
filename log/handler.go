@@ -4,13 +4,13 @@ import (
 	"github.com/One-com/gonelog/syslog"
 )
 
-// Once events has been created, a Handler can ensure it's shipped to the log system.
-// Formatters are a special kind og Handlers which ends the handler pipeline and
-// convert the *Event to []byte (and does something with the bytes)
-
 // Handler is the interface needed to be a part of the Handler chain.
 // Formatters implement this to reveive events.
 // The Handlers in this file pass the Event to further handlers
+//
+// Once events has been created, a Handler can ensure it's shipped to the log system.
+// Formatters are a special kind og Handlers which ends the handler pipeline and
+// convert the *Event to []byte (and does something with the bytes)
 type Handler interface {
 	Log(e Event) error
 }

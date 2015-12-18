@@ -11,11 +11,8 @@ import (
 // We can use basically the same code as the Gokit/log package:
 
 // StdlibWriter implements io.Writer by invoking the stdlib log.Print. It's
-// designed to be passed to a Go kit logger as the writer, for cases where
-// it's necessary to redirect all Go kit log output to the stdlib logger.
-//
-// If you have any choice in the matter, you shouldn't use this. Prefer to
-// redirect the stdlib log to the Go kit logger via NewStdlibAdapter.
+// designed to be passed to a Formatting Handler as the Writer, for cases where
+// it's necessary to redirect all gonelog log output to the stdlib logger.
 type StdlibWriter struct{}
 
 // Write implements io.Writer.
@@ -24,9 +21,14 @@ func (w StdlibWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+//---
+
 // StdlibAdapter wraps a Logger and allows it to be passed to the stdlib
 // logger's SetOutput. It will extract date/timestamps, filenames, and
 // messages, and place them under relevant keys.
+// It uses regular expressions to parse the output of the standard logger to parse
+// it in structured form to the gonelog logger.
+// This is not an ideal solution. Prefer to use a Gonelogger directly
 type StdlibAdapter struct {
 	parse        bool // attempt to parse STDLIB log output to re-create event
 	level        syslog.Priority
