@@ -1,3 +1,4 @@
+// The main package of gonelog is gonelog/log. This top-level package only contains interfaces used to organize methods. 
 package gonelog
 
 import (
@@ -8,7 +9,7 @@ import (
 // Logger is the the main interface of gonelog
 // A "Logger" makes available methods compatible with the stdlib logger and
 // an extended API for leveled logging.
-// Logger is implemented by *log.Logger (like in stdlib)
+// Logger is implemented by *log.Logger
 type Logger interface {
 
 	// Will generate a log event with this level if the Logger log level is
@@ -21,8 +22,7 @@ type Logger interface {
 	LevelLogger
 }
 
-// StdLogger is the interface used by the std lib *log.Logger
-// The functions in this file implement this interface for the gonelog Logger
+// StdLogger is the interface used by the standard lib *log.Logger
 // This is the API for actually logging stuff.
 type StdLogger interface {
 	Fatal(v ...interface{})

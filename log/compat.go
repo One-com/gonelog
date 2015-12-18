@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-// This will instantiate a logger with the same functionality (and limitations) as the std lib logger.
+// New() will instantiate a logger with the same functionality (and limitations) as the std lib logger.
 func New(out io.Writer, prefix string, flags int) *Logger {
 	h := NewStdFormatter(out, prefix, flags)
 	l := NewLogger(LvlDEFAULT, h) // not a part of the hierachy
@@ -15,64 +15,72 @@ func New(out io.Writer, prefix string, flags int) *Logger {
 	return l
 }
 
-func (c *Logger) Output(calldepth int, s string) error {
-	return c.output(calldepth, s)
+// Output() compatible with the standard lib logger
+func (l *Logger) Output(calldepth int, s string) error {
+	return l.output(calldepth, s)
 }
 
-func (c *Logger) Fatal(v ...interface{}) {
-	l := syslog.LOG_ALERT
+// Fatal() compatible with the standard lib logger
+func (l *Logger) Fatal(v ...interface{}) {
+	lvl := syslog.LOG_ALERT
 	s := fmt.Sprint(v...)
-	c.log(l, s)
+	l.log(lvl, s)
 	os.Exit(1)
 }
-func (c *Logger) Fatalf(format string, v ...interface{}) {
-	l := syslog.LOG_ALERT
+// Fatalf() compatible with the standard lib logger
+func (l *Logger) Fatalf(format string, v ...interface{}) {
+	lvl := syslog.LOG_ALERT
 	s := fmt.Sprintf(format, v...)
-	c.log(l, s)
+	l.log(lvl, s)
 	os.Exit(1)
 }
-func (c *Logger) Fatalln(v ...interface{}) {
-	l := syslog.LOG_ALERT
+// Fatalln() compatible with the standard lib logger
+func (l *Logger) Fatalln(v ...interface{}) {
+	lvl := syslog.LOG_ALERT
 	s := fmt.Sprintln(v...)
-	c.log(l, s)
+	l.log(lvl, s)
 	os.Exit(1)
 }
-
-func (c *Logger) Panic(v ...interface{}) {
-	l := syslog.LOG_ALERT
+// Panic() compatible with the standard lib logger
+func (l *Logger) Panic(v ...interface{}) {
+	lvl := syslog.LOG_ALERT
 	s := fmt.Sprint(v...)
-	c.log(l, s)
+	l.log(lvl, s)
 	panic(s)
 }
-func (c *Logger) Panicf(format string, v ...interface{}) {
-	l := syslog.LOG_ALERT
+// Panicf() compatible with the standard lib logger
+func (l *Logger) Panicf(format string, v ...interface{}) {
+	lvl := syslog.LOG_ALERT
 	s := fmt.Sprintf(format, v...)
-	c.log(l, s)
+	l.log(lvl, s)
 	panic(s)
 }
-func (c *Logger) Panicln(v ...interface{}) {
-	l := syslog.LOG_ALERT
+// Panicln compatible with the standard lib logger
+func (l *Logger) Panicln(v ...interface{}) {
+	lvl := syslog.LOG_ALERT
 	s := fmt.Sprintln(v...)
-	c.log(l, s)
+	l.log(lvl, s)
 	panic(s)
 }
-
-func (c *Logger) Print(v ...interface{}) {
-	if l, ok := c.DoingDefaultLevel(); ok {
+// Print() compatible with the standard lib logger
+func (l *Logger) Print(v ...interface{}) {
+	if lvl, ok := l.DoingDefaultLevel(); ok {
 		s := fmt.Sprint(v...)
-		c.log(l, s)
+		l.log(lvl, s)
 	}
 }
-func (c *Logger) Printf(format string, v ...interface{}) {
-	if l, ok := c.DoingDefaultLevel(); ok {
+// Printf() compatible with the standard lib logger
+func (l *Logger) Printf(format string, v ...interface{}) {
+	if lvl, ok := l.DoingDefaultLevel(); ok {
 		s := fmt.Sprintf(format, v...)
-		c.log(l, s)
+		l.log(lvl, s)
 	}
 }
-func (c *Logger) Println(v ...interface{}) {
-	if l, ok := c.DoingDefaultLevel(); ok {
+// Println() compatible with the standard lib logger
+func (l *Logger) Println(v ...interface{}) {
+	if lvl, ok := l.DoingDefaultLevel(); ok {
 		s := fmt.Sprintln(v...)
-		c.log(l, s)
+		l.log(lvl, s)
 	}
 }
 
@@ -83,38 +91,39 @@ func (c *Logger) Println(v ...interface{}) {
 // If these functions have no meaning for the actual Handler attached, then they
 // result in a NOOP.
 
-func (c *Logger) Flags() int {
-	return c.h.Flags()
+// Flags() compatible with the standard lib logger
+func (l *Logger) Flags() int {
+	return l.h.Flags()
 }
-
-func (c *Logger) Prefix() string {
-	return c.h.Prefix()
+// Prefix() compatible with the standard lib logger
+func (l *Logger) Prefix() string {
+	return l.h.Prefix()
 }
-
-func (c *Logger) SetFlags(flag int) {
+// SetFlags() compatible with the standard lib logger
+func (l *Logger) SetFlags(flag int) {
 	// First activate needed book keeping
 	if flag&(Ldate|Ltime|Lmicroseconds) != 0 {
-		c.DoTime(true)
+		l.DoTime(true)
 	}
 	if flag&(Llongfile|Lshortfile) != 0 {
-		c.DoCodeInfo(true)
+		l.DoCodeInfo(true)
 	}
 
-	c.h.SetFlags(flag)
+	l.h.SetFlags(flag)
 
 	// De-activate unneeded book keeping
 	if flag&(Ldate|Ltime|Lmicroseconds) == 0 {
-		c.DoTime(false)
+		l.DoTime(false)
 	}
 	if flag&(Llongfile|Lshortfile) == 0 {
-		c.DoCodeInfo(false)
+		l.DoCodeInfo(false)
 	}
 }
-
-func (c *Logger) SetPrefix(prefix string) {
-	c.h.SetPrefix(prefix)
+// SetPrefix() compatible with the standard lib logger
+func (l *Logger) SetPrefix(prefix string) {
+	l.h.SetPrefix(prefix)
 }
-
-func (c *Logger) SetOutput(w io.Writer) {
-	c.h.SetOutput(w)
+// SetOutput() compatible with the standard lib logger
+func (l *Logger) SetOutput(w io.Writer) {
+	l.h.SetOutput(w)
 }

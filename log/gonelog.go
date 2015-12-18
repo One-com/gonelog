@@ -37,22 +37,23 @@ const (
 )
 
 // Logger implements the gonelog.Logger interface through which all logging is done.
-// This struct should be source compatible with the Go std log.Logger, but has to be exported
-// to be so.
+// This struct is source compatible with the Go std lib log.Logger, but has to be exported to be so.
 // Don't create these your self. Use a constructor function.
 // Once created, its member attributes cannot be changed (to avoid races),
-// Exceptions are: The config pointed to, hvis goes through atomic operations
-//                 The handler pointed to, which can be atomically replaced.
+// Exceptions are:
+// * Changing the config, which goes through atomic operations
+// * Changing the handler, which can be atomically replaced.
+//
 // There's a race between changing both, so beware! If you swap in a handler which
 // does file/line-recording without changing config to DoCodeInfo() first,
 // there will no code-info in the log-events during the race.
 // Repeat: There's no way to change handler and config atomically together.
 // So don't enable a handler using something the config doesn't support (timestamps/codeinfo)
 // unless you can live with potentially a few log lines with wrong content.
-// All attributes are reference-like attributes. Copying them will not gain you anything, but effectively
-// two "pointers" to the same logger.
-// Copying values of this type is discouraged, but in principle legal.
+// All attributes are reference-like attributes. Copying them will not gain you anything, but effectively just having two "pointers" to the same logger.
+// Copying values of this type is discouraged, but in principle legal, since the direct members never change.
 // The new copy will behave like the old, and modifications to one of them will affect the other.
+//
 // Logger allows for contextual logging, by keeping K/V data to be logged with all
 // events and to create sub child loggers with additional K/V data.
 type Logger struct {
@@ -68,7 +69,7 @@ type Logger struct {
 	data    []interface{} // K/V Attributes common to all events logged ... Using a slice instead of map for speed
 }
 
-// NewLogger creates a new logger out side of the Logger hiearchy
+// NewLogger creates a new unamed Logger out side of the named Logger hiearchy.
 func NewLogger(level syslog.Priority, handler Handler) (l *Logger) {
 
 	i := defConfig & ^maskLogLvl | (uint32(level) & maskLogLvl)
@@ -288,14 +289,18 @@ func (l *Logger) SetLevel(level syslog.Priority) bool {
 	return atomic.CompareAndSwapUint32(&l.cfg.config, c, n)
 }
 
-// SetDefaultLevel sets the level which Print*() methods are logging with.
+// Deprecated: Use SetPrintLevel()
+func (l *Logger) SetDefaultLevel(level syslog.Priority, respect bool) bool {
+	return l.SetPrintLevel(level, respect)
+}
+// SetPrintLevel sets the level which Print*() methods are logging with.
 // "respect" indicated whether Print*() statements will respect the Logger loglevel
 // or generate events anyway. (with the default log level).
 // Without "respect" the logger can generate events above its loglevel. Such events
 // can however still be filtered out by filter-handler, or filter-writers, or by external
 // systems like syslog.
 // returns success
-func (l *Logger) SetDefaultLevel(level syslog.Priority, respect bool) bool {
+func (l *Logger) SetPrintLevel(level syslog.Priority, respect bool) bool {
 	if level > syslog.LOG_DEBUG {
 		level = syslog.LOG_DEBUG
 	}
@@ -324,9 +329,18 @@ func (l *Logger) Do(level syslog.Priority) bool {
 
 /**********  methods returning the current config ************/
 
+// DoingPrintLevel returns whether a log.Println() would actually
+// generate a log event with the current config.
+// It's equivalent to l.Does(l.PrintLevel()) - but atomically
+func (l *Logger) DoingPrintLevel() (syslog.Priority, bool) {
+	return l.cfg.doing_default_level()
+}
+
+
 // DoingDefaultLevel returns whether a log.Println() would actually
 // generate a log event with the current config.
 // It's equivalent to l.Does(l.DefaultLevel()) - but atomically
+// Deprecated, use DoingPrintLevel()
 func (l *Logger) DoingDefaultLevel() (syslog.Priority, bool) {
 	return l.cfg.doing_default_level()
 }
@@ -336,7 +350,12 @@ func (l *Logger) Level() syslog.Priority {
 	return l.cfg.level()
 }
 
-// DefaultLevel returns the current log level of Print*() methods
+// PrintLevel returns the current log level of Print*() methods
+func (l *Logger) PrintLevel() syslog.Priority {
+	return l.cfg.default_level()
+}
+
+// DefaultLevel returns the current log level of Print*() methods. Deprecated, use PrintLevel()
 func (l *Logger) DefaultLevel() syslog.Priority {
 	return l.cfg.default_level()
 }

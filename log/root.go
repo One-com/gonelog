@@ -13,6 +13,7 @@ import (
 // The default log context
 var defaultLogger *Logger
 
+// Returns the default Logger - which is also the root of the name hierachy.
 func Default() *Logger {
 	return defaultLogger
 }
@@ -48,7 +49,7 @@ func AutoColoring() {
 
 //--- level logger stuff
 
-// ALERT makes the default Logger create a log event at ALERT level.
+// Requests the default logger to create a log event
 func ALERT(msg string, kv ...interface{}) {
 	c := defaultLogger
 	l := syslog.LOG_ALERT
@@ -56,6 +57,7 @@ func ALERT(msg string, kv ...interface{}) {
 		c.log(l, msg, kv...)
 	}
 }
+// Requests the default logger to create a log event
 func CRIT(msg string, kv ...interface{}) {
 	c := defaultLogger
 	l := syslog.LOG_CRIT
@@ -63,6 +65,7 @@ func CRIT(msg string, kv ...interface{}) {
 		c.log(l, msg, kv...)
 	}
 }
+// Requests the default logger to create a log event
 func ERROR(msg string, kv ...interface{}) {
 	c := defaultLogger
 	l := syslog.LOG_ERROR
@@ -70,6 +73,7 @@ func ERROR(msg string, kv ...interface{}) {
 		c.log(l, msg, kv...)
 	}
 }
+// Requests the default logger to create a log event
 func WARN(msg string, kv ...interface{}) {
 	c := defaultLogger
 	l := syslog.LOG_WARN
@@ -77,6 +81,7 @@ func WARN(msg string, kv ...interface{}) {
 		c.log(l, msg, kv...)
 	}
 }
+// Requests the default logger to create a log event
 func NOTICE(msg string, kv ...interface{}) {
 	c := defaultLogger
 	l := syslog.LOG_NOTICE
@@ -84,6 +89,7 @@ func NOTICE(msg string, kv ...interface{}) {
 		c.log(l, msg, kv...)
 	}
 }
+// Requests the default logger to create a log event
 func INFO(msg string, kv ...interface{}) {
 	c := defaultLogger
 	l := syslog.LOG_INFO
@@ -91,6 +97,7 @@ func INFO(msg string, kv ...interface{}) {
 		c.log(l, msg, kv...)
 	}
 }
+// Requests the default logger to create a log event
 func DEBUG(msg string, kv ...interface{}) {
 	c := defaultLogger
 	l := syslog.LOG_DEBUG
@@ -99,21 +106,28 @@ func DEBUG(msg string, kv ...interface{}) {
 	}
 }
 
-// Methods which return a function which will do the queries logging when called.
+// If the default Logger is logging at the requested level a function creating such a log event will be returned.
 func ALERTok() (ilog.LogFunc, bool)  { l := defaultLogger; return l.alert, l.Does(syslog.LOG_ALERT) }
+// If the default Logger is logging at the requested level a function creating such a log event will be returned.
 func CRITok() (ilog.LogFunc, bool)   { l := defaultLogger; return l.crit, l.Does(syslog.LOG_CRIT) }
+// If the default Logger is logging at the requested level a function creating such a log event will be returned.
 func ERRORok() (ilog.LogFunc, bool)  { l := defaultLogger; return l.error, l.Does(syslog.LOG_ERROR) }
+// If the default Logger is logging at the requested level a function creating such a log event will be returned.
 func WARNok() (ilog.LogFunc, bool)   { l := defaultLogger; return l.warn, l.Does(syslog.LOG_WARN) }
+// If the default Logger is logging at the requested level a function creating such a log event will be returned.
 func NOTICEok() (ilog.LogFunc, bool) { l := defaultLogger; return l.notice, l.Does(syslog.LOG_NOTICE) }
+// If the default Logger is logging at the requested level a function creating such a log event will be returned.
 func INFOok() (ilog.LogFunc, bool)   { l := defaultLogger; return l.info, l.Does(syslog.LOG_INFO) }
+// If the default Logger is logging at the requested level a function creating such a log event will be returned.
 func DEBUGok() (ilog.LogFunc, bool)  { l := defaultLogger; return l.debug, l.Does(syslog.LOG_DEBUG) }
 
 //---
 
+// Increase the log level of the default Logger
 func IncLevel() bool {
 	return defaultLogger.IncLevel()
 }
-
+// Decrease the log level of the default Logger
 func DecLevel() bool {
 	return defaultLogger.DecLevel()
 }
@@ -124,8 +138,14 @@ func SetLevel(level syslog.Priority) bool {
 	return defaultLogger.SetLevel(level)
 }
 
+// Set the log level used by Print*() calls. Deprecated: Use SetPrintLevel()
 func SetDefaultLevel(level syslog.Priority, respect bool) bool {
 	return defaultLogger.SetDefaultLevel(level, respect)
+}
+
+// Set the log level used by Print*() calls.x
+func SetPrintLevel(level syslog.Priority, respect bool) bool {
+	return defaultLogger.SetPrintLevel(level, respect)
 }
 
 // Level returns the default Loggers log level.
@@ -135,23 +155,27 @@ func Level() syslog.Priority {
 
 //--- std logger stuff
 
+// Compatible with the standard library
 func Flags() int {
 	return defaultLogger.Flags()
 }
+// Compatible with the standard library
 func Prefix() string {
 	return defaultLogger.Prefix()
 }
-
+// Compatible with the standard library
 func SetFlags(flag int) {
 	defaultLogger.SetFlags(flag)
 }
+// Compatible with the standard library
 func SetPrefix(prefix string) {
 	defaultLogger.SetPrefix(prefix)
 }
+// Compatible with the standard library
 func SetOutput(w io.Writer) {
 	defaultLogger.SetOutput(w)
 }
-
+// Compatible with the standard library
 func Fatal(v ...interface{}) {
 	c := defaultLogger
 	l := syslog.LOG_ALERT
@@ -161,6 +185,7 @@ func Fatal(v ...interface{}) {
 	}
 	os.Exit(1)
 }
+// Compatible with the standard library
 func Fatalf(format string, v ...interface{}) {
 	c := defaultLogger
 	l := syslog.LOG_ALERT
@@ -171,6 +196,7 @@ func Fatalf(format string, v ...interface{}) {
 	os.Exit(1)
 
 }
+// Compatible with the standard library
 func Fatalln(v ...interface{}) {
 	c := defaultLogger
 	l := syslog.LOG_ALERT
@@ -180,7 +206,7 @@ func Fatalln(v ...interface{}) {
 	}
 	os.Exit(1)
 }
-
+// Compatible with the standard library
 func Panic(v ...interface{}) {
 	c := defaultLogger
 	l := syslog.LOG_ALERT
@@ -190,6 +216,7 @@ func Panic(v ...interface{}) {
 		panic(s)
 	}
 }
+// Compatible with the standard library
 func Panicf(format string, v ...interface{}) {
 	c := defaultLogger
 	l := syslog.LOG_ALERT
@@ -199,6 +226,7 @@ func Panicf(format string, v ...interface{}) {
 		panic(s)
 	}
 }
+// Compatible with the standard library
 func Panicln(v ...interface{}) {
 	c := defaultLogger
 	l := syslog.LOG_ALERT
@@ -209,6 +237,7 @@ func Panicln(v ...interface{}) {
 	}
 }
 
+// Compatible with the standard library
 func Print(v ...interface{}) {
 	c := defaultLogger
 	if l, ok := c.DoingDefaultLevel(); ok {
@@ -216,6 +245,7 @@ func Print(v ...interface{}) {
 		c.log(l, s)
 	}
 }
+// Compatible with the standard library
 func Printf(format string, v ...interface{}) {
 	c := defaultLogger
 	if l, ok := c.DoingDefaultLevel(); ok {
@@ -223,6 +253,7 @@ func Printf(format string, v ...interface{}) {
 		c.log(l, s)
 	}
 }
+// Compatible with the standard library
 func Println(v ...interface{}) {
 	c := defaultLogger
 	if l, ok := c.DoingDefaultLevel(); ok {
@@ -231,7 +262,7 @@ func Println(v ...interface{}) {
 	}
 }
 
-// Log is the simplest Logger method. Provide the log level your self.
+// Log is the simplest Logger method. Provide the log level (syslog.LOG_*) your self.
 func Log(level syslog.Priority, msg string, kv ...interface{}) {
 	c := defaultLogger
 	if c.Does(level) {

@@ -55,46 +55,52 @@ func (l *Logger) DEBUGok() (ilog.LogFunc, bool)  { return l.debug, l.Does(syslog
 
 //---
 
-// ALERT logs a message and optinal KV values at ALERT level.
-func (c *Logger) ALERT(msg string, kv ...interface{}) {
-	l := syslog.LOG_ALERT
-	if c.Does(l) {
-		c.log(l, msg, kv...)
+// Log a message and optional KV values at syslog ALERT level.
+func (l *Logger) ALERT(msg string, kv ...interface{}) {
+	lvl := syslog.LOG_ALERT
+	if l.Does(lvl) {
+		l.log(lvl, msg, kv...)
 	}
 }
-func (c *Logger) CRIT(msg string, kv ...interface{}) {
-	l := syslog.LOG_CRIT
-	if c.Does(l) {
-		c.log(l, msg, kv...)
+// Log a message and optional KV values at syslog CRIT level.
+func (l *Logger) CRIT(msg string, kv ...interface{}) {
+	lvl := syslog.LOG_CRIT
+	if l.Does(lvl) {
+		l.log(lvl, msg, kv...)
 	}
 }
-func (c *Logger) ERROR(msg string, kv ...interface{}) {
-	l := syslog.LOG_ERROR
-	if c.Does(l) {
-		c.log(l, msg, kv...)
+// Log a message and optional KV values at syslog ERROR level.
+func (l *Logger) ERROR(msg string, kv ...interface{}) {
+	lvl := syslog.LOG_ERROR
+	if l.Does(lvl) {
+		l.log(lvl, msg, kv...)
 	}
 }
-func (c *Logger) WARN(msg string, kv ...interface{}) {
-	l := syslog.LOG_WARN
-	if c.Does(l) {
-		c.log(l, msg, kv...)
+// Log a message and optional KV values at syslog WARN level.
+func (l *Logger) WARN(msg string, kv ...interface{}) {
+	lvl := syslog.LOG_WARN
+	if l.Does(lvl) {
+		l.log(lvl, msg, kv...)
 	}
 }
-func (c *Logger) NOTICE(msg string, kv ...interface{}) {
-	l := syslog.LOG_NOTICE
-	if c.Does(l) {
-		c.log(l, msg, kv...)
+// Log a message and optional KV values at syslog NOTICE level.
+func (l *Logger) NOTICE(msg string, kv ...interface{}) {
+	lvl := syslog.LOG_NOTICE
+	if l.Does(lvl) {
+		l.log(lvl, msg, kv...)
 	}
 }
-func (c *Logger) INFO(msg string, kv ...interface{}) {
-	l := syslog.LOG_INFO
-	if c.Does(l) {
-		c.log(l, msg, kv...)
+// Log a message and optional KV values at syslog INFO level.
+func (l *Logger) INFO(msg string, kv ...interface{}) {
+	lvl := syslog.LOG_INFO
+	if l.Does(lvl) {
+		l.log(lvl, msg, kv...)
 	}
 }
-func (c *Logger) DEBUG(msg string, kv ...interface{}) {
-	l := syslog.LOG_DEBUG
-	if c.Does(l) {
-		c.log(l, msg, kv...)
+// Log a message and optional KV values at syslog DEBUG level.
+func (l *Logger) DEBUG(msg string, kv ...interface{}) {
+	lvl := syslog.LOG_DEBUG
+	if l.Does(lvl) {
+		l.log(lvl, msg, kv...)
 	}
 }

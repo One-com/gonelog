@@ -1,3 +1,5 @@
+// Gonelog uses the syslog level contants source code compatible with the standard library.
+// This package is primarily here to not depend on importing "log/syslog"
 package syslog
 
 type Priority int
