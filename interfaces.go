@@ -15,7 +15,7 @@ type Logger interface {
 	// Will generate a log event with this level if the Logger log level is
 	// high enough.
 	// The event will have the given log message and key/value structured data.
-	Log(level syslog.Priority, message string, kv ...interface{})
+	Log(level syslog.Priority, message string, kv ...interface{}) error
 
 	// further interfaces
 	StdLogger

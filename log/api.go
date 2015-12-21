@@ -5,14 +5,18 @@ import (
 	"github.com/One-com/gonelog/syslog"
 )
 
-func // Log is the simplest Logger method
-(l *Logger) Log(level syslog.Priority, msg string, kv ...interface{}) {
+// Log is the simplest Logger method
+func (l *Logger) Log(level syslog.Priority, msg string, kv ...interface{}) (err error) {
 	if l.Does(level) {
-		l.log(level, msg, kv...)
+		err = l.log(level, msg, kv...)
 	}
+	return
 }
 
-//--- internal level loggers (to return from *ok() functions)
+//---
+
+// Internal level loggers (to return from *ok() functions)
+// These are functionally equivalent to log() and output(), but bound to a specific level.
 func (l *Logger) alert(msg string, kv ...interface{}) {
 	level := syslog.LOG_ALERT
 	l.h.Log(l.newEvent(level, msg, normalize(kv)))
