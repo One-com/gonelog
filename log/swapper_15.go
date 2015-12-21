@@ -10,6 +10,8 @@ import (
 
 // Indirection of Log() calls through a Handler which can be atomically swapped
 
+
+// Returned by some Log functions (Log()/Output()) if no Handler was found to log an event.
 var ErrNotLogged = errors.New("No handler found to log event")
 
 // Using atomic and mutex to support atomic reads, but also read-modify-write ops.
@@ -42,22 +44,31 @@ func (h *swapper) Log(e *event) (err error) {
 
 	if v.Handler != nil {
 		err = v.Handler.Log(Event{e})
-	} else {
-		// Have to try parents. Walk the name-tree to find the first handler
-		cur := v.parent.h
-		for cur != nil {
-			v, _ := cur.val.Load().(valueStruct) // must be valid
-			if v.Handler != nil {
-				err = v.Handler.Log(Event{e})
-				break
-			} else {
-				cur = v.parent.h
+		if err == nil {
+			freePoolEvent(e)
+			return
+		}
+	}
+	// Either no handler, or an error was returned
+	// Have to try parents. Walk the name-tree to find the first handler, not returning an error
+	cur := v.parent.h
+	for cur != nil {
+		v, _ := cur.val.Load().(valueStruct) // must be valid
+		if v.Handler != nil {
+			err = v.Handler.Log(Event{e})
+			if err == nil {
+				freePoolEvent(e)
+				return
 			}
 		}
+		cur = v.parent.h
 	}
 
 	freePoolEvent(e)
-	return err
+	if err == nil {
+		err = ErrNotLogged
+	}
+	return
 }
 
 func (s *swapper) SwapParent(new *Logger) (old *Logger) {

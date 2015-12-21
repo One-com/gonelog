@@ -103,7 +103,7 @@ Loggers can have names, placing them in a global "/" separated hierachy.
 
 It's recommended to create a Logger by mentioning it by name using GetLogger("logger/name") - instead of creating unnamed Loggers with NewLogger().
 If such a logger exists you will get it returned, so you can configure it and set the formatter/output. Otherwise a new logger by that name is created. Libraries are encouraged to published the names of their Loggers and to name Loggers after their Go package. This works exactly like the Python "logging" library - with one exception:
-When Logging an event at a Logger the tree of Loggers by name are only traversed towards to root to find the first Logger having a Handler attached. The log-event is then sent to that handler.
+When Logging an event at a Logger the tree of Loggers by name are only traversed towards to root to find the first Logger having a Handler attached, not returning an error. The log-event is then sent to that handler. If that handler returns an error, the parent Logger and its Handler is tried. This allows to contruct a "Last Resort" parent for errors in the default log Handler.
 The Python behaviour is to send the event to all Handlers found in the Logger tree. This is not the way it's done here. Only one Handler will be given the event to log. If you wan't more Handlers getting the event, use a MultiHandler.
 
 	package main
