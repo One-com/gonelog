@@ -19,7 +19,9 @@ type swapper struct {
 }
 
 type valueStruct struct {
+	// The actual Log event Handler
 	Handler
+	// Any parent in the named hierachy
 	parent *Logger
 }
 

@@ -68,7 +68,7 @@ type Logger struct {
 	// An atomic swappable handle to the loghandler and any name-based parent
 	h *swapper
 
-	// The Logger is a context-child of another wrt. K/V data created by With(). This is *NOT* the name based parent.
+	// The Logger is a context-child of another wrt. K/V data created by With().  This is *NOT* the name based parent.
 	cparent *Logger
 
 	// K/V Attributes common to all events logged ... Using a slice instead of map for speed
