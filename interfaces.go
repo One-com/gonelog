@@ -1,4 +1,4 @@
-// The main package of gonelog is gonelog/log. This top-level package only contains interfaces used to organize methods. 
+// The main package of gonelog is gonelog/log. This top-level package only contains interfaces used to organize methods.
 package gonelog
 
 import (
@@ -76,12 +76,11 @@ type LevelLoggerFull interface {
 
 	Level() syslog.Priority
 
-	Clone(kv ...interface{}) *Logger
-	With(kv ...interface{}) *Logger
-
 	SetLevel(level syslog.Priority) bool
 	IncLevel() bool
 	DecLevel() bool
+
+	With(kv ...interface{}) *Logger
 }
 
 //---
@@ -94,7 +93,7 @@ type StdFormatter interface {
 }
 
 // StdMutableFormatter is the interface for a Logger or formatting Handler which directly
-// can change the stdlib flags, prefix and output io.Writer attributes.
+// can change the stdlib flags, prefix and output io.Writer attributes in a synchronized manner.
 type StdMutableFormatter interface {
 	StdFormatter
 	SetFlags(flag int)

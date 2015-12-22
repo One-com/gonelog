@@ -51,7 +51,7 @@ func ExampleContext() {
 	log.WARN("lazy", "hip", log.Lazy(func() interface{} {return "slow"}))
 	
 	cancel_context, cancel_func := context.WithCancel(context.Background())
-	logger := log.Clone(log.KV{"tra":"la"})
+	logger := log.With(log.KV{"tra":"la"})
 	logger.DoCodeInfo(true)
 	logging_context := context.WithLogging(cancel_context, logger)
 	
@@ -183,17 +183,4 @@ func ExampleNamedLogger() {
 	l3.NOTICE("notice")
 	// Output:
 	// <5> (my/lib/module) notice k=v
-}
-
-func ExampleNamedClone() {
-	l := log.Default()
-	l.SetOutput(os.Stdout)
-	l.SetFlags(log.Lname)
-	l.SetPrefix("PFX")
-	l2 := l.With("a","b")
-	l3 := l2.NamedClone("myname")
-
-	l3.ERROR("message")
-	// Output:
-	// PFXmessage a=b
 }

@@ -88,15 +88,6 @@ func (s *swapper) SwapHandler(new Handler) {
 	s.mu.Unlock()
 }
 
-// SwapClone swaps in a handler from another swapper
-func (s *swapper) swapClone(source *swapper) {
-	s.mu.Lock()
-	sh := source.handler()
-	p := (s.val.Load().(valueStruct)).parent
-	s.val.Store(valueStruct{Handler: sh, parent: p})
-	s.mu.Unlock()
-}
-
 func (s *swapper) handler() Handler {
 	return (s.val.Load().(valueStruct)).Handler
 }

@@ -136,74 +136,8 @@ func (l *Logger) AutoColoring() {
 	l.h.AutoColoring()
 }
 
-func (l *Logger) gather_context() []interface{} {
-	var dd []interface{}
-	// Traverse contexts gather KV data
-	var i int
-	// tally up the kv length
-	parent := l
-	for parent != nil {
-		i += len(parent.data)
-		parent = parent.cparent
-	}
-	dd = make([]interface{}, i)
-	// Now collect data
-	parent = l
-	i = 0
-	for parent != nil {
-		for _, k_or_v := range parent.data {
-			dd[i] = k_or_v
-			i++
-		}
-		parent = parent.cparent
-	}
-	return dd
-}
 
-// NamedClone creates a Logger equivalent (level,K/V-data...) to the current
-// but giving it a name in the hierachy.
-func (l *Logger) NamedClone(name string, kv ...interface{}) *Logger {
-	// Need to handle child context (cparent != nil) differently
-	d := normalize(kv)
-
-	if l.cparent != nil {
-		d = append(d, l.gather_context()...)
-	}
-
-	new := GetLogger(name)
-	new.data = d[:len(d):len(d)]
-	new.cfg = l.cfg.clone()
-	new.h.swapClone(l.h)
-
-	return new
-}
-
-// Clone creates a new Logger as a clone of an existing Logger, but with the same Handler.
-// Clones of a Logger will be able to change and divert from the original
-// This is different for just doing a copy of the object, by allowing adding new data,
-// allowing changing the handler and having it's own config.
-// This is also different from calling With() in that the new logger is fully its own
-// and that replacing it's config or handler will not affect the parent.
-// The new logger will be unnamed
-func (l *Logger) Clone(kv ...interface{}) *Logger {
-	// Need to handle child context (cparent != nil) differently
-	d := normalize(kv)
-
-	if l.cparent != nil {
-		d = append(d, l.gather_context()...)
-	}
-
-	new := &Logger{
-		data: d[:len(d):len(d)],
-		h:    new_swapper(),
-		cfg:  l.cfg.clone(),
-	}
-	new.h.swapClone(l.h)
-
-	return new
-}
-
-// With ties a sub-Context to the Logger. This is more lightweight than Clone()
+// With ties a sub-Context to the Logger.
 func (l *Logger) With(kv ...interface{}) *Logger {
 	d := normalize(kv)
 	// copy the pointers to handler and config to ease access later

@@ -8,7 +8,8 @@ import (
 // First some interfaces to test on what can be done with Handlers
 
 // CloneableHandler is a Handler which can clone itself for modification with
-// the purpose of being swapped in to replace the current handler
+// the purpose of being swapped in to replace the current handler - thus utilizing the
+// atomiciy of the swapper to change Handler behaviour during flight.
 // Handlers not being Cloneable must be manually manipulated by the application
 // and replaced by Logger.SetHandler()
 // Making a Handler Cloneable makes it possible for the framework to support the
@@ -17,7 +18,7 @@ import (
 // In other words, once the first Log() method is called the Handler is not modifed.
 type CloneableHandler interface {
 	Handler
-	Clone(allow_upgrade bool) CloneableHandler
+	Clone() CloneableHandler
 }
 
 // USAutoColorer is the ability of a formatter to do AutoColoring detection
@@ -54,7 +55,7 @@ func (h *swapper) AutoColoring() {
 	old := h.handler()
 	if clo, ok := old.(CloneableHandler); ok {
 		if _, ok := old.(USAutoColorer); ok {
-			new := clo.Clone(false) // autocoloring must not upgrade
+			new := clo.Clone()
 			new.(USAutoColorer).UnsyncedAutoColoring()
 			h.SwapHandler(new)
 		}
@@ -101,7 +102,7 @@ func (h *swapper) SetFlags(flag int) {
 	// are not well defined for "some" handler.
 	if clo, ok := old.(CloneableHandler); ok {
 		if _, ok := old.(USFlagger); ok {
-			new := clo.Clone(true) // need to allow upgrade
+			new := clo.Clone()
 			new.(USFlagger).UnsyncedSetFlags(flag)
 			h.SwapHandler(new)
 		}
@@ -116,7 +117,7 @@ func (h *swapper) SetPrefix(prefix string) {
 	}
 	if clo, ok := old.(CloneableHandler); ok {
 		if _, ok := old.(USPrefixer); ok {
-			new := clo.Clone(true) // need to allow upgrade
+			new := clo.Clone()
 			new.(USPrefixer).UnsyncedSetPrefix(prefix)
 			h.SwapHandler(new)
 		}
@@ -137,7 +138,7 @@ func (h *swapper) SetOutput(w io.Writer) {
 		} else { // then we have to swap
 			if clo, ok := old.(CloneableHandler); ok {
 				if _, ok := old.(USOutputter); ok {
-					new := clo.Clone(false)
+					new := clo.Clone()
 					new.(USOutputter).UnsyncedSetOutput(w)
 					h.SwapHandler(new)
 				}

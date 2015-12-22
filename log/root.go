@@ -37,11 +37,6 @@ func With(kv ...interface{}) *Logger {
 	return defaultLogger.With(kv...)
 }
 
-// Clone the default logger
-func Clone(kv ...interface{}) *Logger {
-	return defaultLogger.Clone(kv...)
-}
-
 // AutoColoring turns on coloring if the output Writer is connected to a TTY
 func AutoColoring() {
 	defaultLogger.AutoColoring()
