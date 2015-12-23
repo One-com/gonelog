@@ -5,7 +5,7 @@ import (
 	stdlog "log"
 	"testing"
 )
-
+// Performance of the standard library to compare
 func BenchmarkGoStdPrintln(b *testing.B) {
 	const testString = "test"
 	l := stdlog.New(ioutil.Discard, "", LstdFlags)
@@ -14,6 +14,7 @@ func BenchmarkGoStdPrintln(b *testing.B) {
 	}
 }
 
+// Similar with gonelog using stdformatter
 func BenchmarkStdPrintln(b *testing.B) {
 	const testString = "test"
 	l := New(ioutil.Discard, "", LstdFlags)
@@ -21,7 +22,7 @@ func BenchmarkStdPrintln(b *testing.B) {
 		l.Println(testString)
 	}
 }
-
+// Similar using flxformatter
 func BenchmarkFlxPrintln(b *testing.B) {
 	const testString = "test"
 	h := NewFlxFormatter(ioutil.Discard, "", LstdFlags)
@@ -31,7 +32,7 @@ func BenchmarkFlxPrintln(b *testing.B) {
 		l.Println(testString)
 	}
 }
-
+// Try standard lib in parallel
 func BenchmarkParallelGoStdPrintln(b *testing.B) {
 	const testString = "test"
 	l := stdlog.New(ioutil.Discard, "", LstdFlags)
@@ -41,7 +42,7 @@ func BenchmarkParallelGoStdPrintln(b *testing.B) {
 		}
 	})
 }
-
+// similar but with gonelog
 func BenchmarkParallelStdPrintln(b *testing.B) {
 	const testString = "test"
 	l := New(ioutil.Discard, "", LstdFlags)
@@ -51,7 +52,7 @@ func BenchmarkParallelStdPrintln(b *testing.B) {
 		}
 	})
 }
-
+// similar but with flxformatter
 func BenchmarkParallelFlxPrintln(b *testing.B) {
 	const testString = "test"
 	h := NewFlxFormatter(ioutil.Discard, "", LstdFlags)
@@ -64,7 +65,7 @@ func BenchmarkParallelFlxPrintln(b *testing.B) {
 		}
 	})
 }
-
+// standard API with minimal mode
 func BenchmarkParallelMinPrintln(b *testing.B) {
 	const testString = "test"
 	h := NewMinFormatter(ioutil.Discard)
@@ -77,7 +78,7 @@ func BenchmarkParallelMinPrintln(b *testing.B) {
 		}
 	})
 }
-
+// Using ERRORok() to log
 func BenchmarkParallelMinERRORok(b *testing.B) {
 	const testString = "test"
 	h := NewMinFormatter(ioutil.Discard)
@@ -87,6 +88,21 @@ func BenchmarkParallelMinERRORok(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			if f, ok := l.ERRORok(); ok {
+				f(testString)
+			}
+		}
+	})
+}
+// Using DEBUGok() which will not be logged. - showing how cheap debug log statements can be.
+func BenchmarkParallelMinDEBUGok(b *testing.B) {
+	const testString = "test"
+	h := NewMinFormatter(ioutil.Discard)
+	l := NewLogger(LvlDEFAULT, h)
+	l.DoTime(false)
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			if f, ok := l.DEBUGok(); ok {
 				f(testString)
 			}
 		}

@@ -77,12 +77,6 @@ type buffer struct {
 	tmp [128]byte // temporary byte array for creating headers.
 }
 
-// Simply writes what systemd expects on stdout: <level>msg
-type minformatter struct {
-	out  io.Writer
-	pool *sync.Pool // of buffer
-}
-
 type flxformatter struct {
 	flag   int    // controlling the format
 	prefix string // prefix to write at beginning of each line, after any level/timestamp
@@ -95,8 +89,9 @@ type flxformatter struct {
 }
 
 
-func NewMinFormatter(w io.Writer) *minformatter {
-	f := &minformatter{
+func NewMinFormatter(w io.Writer) *flxformatter {
+	f := &flxformatter{
+		flag: LminFlags,
 		out:  w,
 		pool: &sync.Pool{New: func() interface{} { return new(buffer) }},
 	}
@@ -115,21 +110,17 @@ func NewFlxFormatter(w io.Writer, prefix string, flag int) *flxformatter {
 	return f
 }
 
-// Clone upgrade the formatter to a flxformatter
-func (f *minformatter) Clone() (new CloneableHandler) {
-	new = &minformatter{out: f.out, pool: f.pool}
-	return
-}
-func (f *minformatter) GetWriter() io.Writer {
-	return f.out
-}
-
 // Clone returns a clone of the current handler for tweaking and swapping in
-func (f *flxformatter) Clone() CloneableHandler {
+func (f *flxformatter) Clone(options ...HandlerOption) CloneableHandler {
 	new := &flxformatter{}
 	// We shamelessly copy the whole formatter. This is ok, since everything
 	// mutable is pointer types (like pool) and we can inherit those.
 	*new = *f
+
+	for _, option := range options {
+		option(new)
+	}
+
 	return new
 }
 
@@ -139,42 +130,39 @@ func (f *flxformatter) Prefix() string {
 func (f *flxformatter) Flags() int {
 	return f.flag
 }
-func (f *flxformatter) GetWriter() io.Writer {
-	return f.out
-}
 
-func (f *flxformatter) UnsyncedAutoColoring() {
-	var istty bool
-	w := f.out
-	if tw, ok := w.(MaybeTtyWriter); ok {
-		istty = tw.IsTty()
-	} else {
-		istty = term.IsTty(w)
+func (f *flxformatter) AutoColoring() HandlerOption {
+	return func (c CloneableHandler) {
+		var istty bool
+		o := c.(*flxformatter)
+		w := o.out
+		if tw, ok := w.(MaybeTtyWriter); ok {
+			istty = tw.IsTty()
+		} else {
+			istty = term.IsTty(w)
+		}
+		
+		if istty {
+			o.flag = o.flag | Lcolor
+		} else {
+			o.flag = o.flag & ^Lcolor
+		}		
 	}
-
-	if istty {
-		f.SetLevelPrefixes(&term_lvlpfx)
-		f.flag = f.flag | Lcolor
-	} else {
-		f.flag = f.flag & ^Lcolor
-	}
 }
 
-func (f *flxformatter) UnsyncedSetOutput(w io.Writer) {
-	f.out = w
+func (f *flxformatter) SetFlags(flags int) HandlerOption {
+	return func (c CloneableHandler) { c.(*flxformatter).flag = flags }
 }
 
-func (f *flxformatter) UnsyncedSetPrefix(prefix string) {
-	f.prefix = prefix
+func (f *flxformatter) SetPrefix(prefix string) HandlerOption {
+	return func (c CloneableHandler) { c.(*flxformatter).prefix = prefix }
 }
 
-func (f *flxformatter) UnsyncedSetFlags(flag int) {
-	f.flag = flag
-}
 
-func (f *flxformatter) SetLevelPrefixes(arr *[8]string) {
-	f.pfxarr = arr
-}
+//func (f *flxformatter) SetLevelPrefixes(arr *[8]string) {
+//	f.pfxarr = arr
+//}
+
 func (f *flxformatter) SetHeaderOrder(arr *[]uint8) {
 	f.order = arr
 }
@@ -186,15 +174,6 @@ func (l *flxformatter) getBuffer() *buffer {
 	return b
 }
 func (l *flxformatter) putBuffer(b *buffer) {
-	l.pool.Put(b)
-}
-
-func (l *minformatter) getBuffer() *buffer {
-	b := l.pool.Get().(*buffer)
-	b.Reset()
-	return b
-}
-func (l *minformatter) putBuffer(b *buffer) {
 	l.pool.Put(b)
 }
 
@@ -216,16 +195,37 @@ func itoa(buf *[]byte, i int, wid int) {
 }
 
 /*********************************************************************/
-func (f *minformatter) Log(e Event) error {
+
+func (f *flxformatter) Log(e Event) error {
+
+	var now time.Time
+	var file string
+	var line int
+
 	msg := e.Msg
-
 	buf := f.getBuffer()
-
 	xbuf := buf.tmp[:0]
-	xbuf = append(xbuf, '<')
-	itoa(&xbuf, int(e.Lvl), 1)
-	xbuf = append(xbuf, '>')
 
+	if f.flag == LminFlags { // Minimal mode
+		xbuf = append(xbuf, '<')
+		itoa(&xbuf, int(e.Lvl), 1)
+		xbuf = append(xbuf, '>')
+	} else {
+		if f.flag&(Lshortfile|Llongfile) != 0 {
+			if e.fok {
+				file, line = e.FileInfo()
+			} else {
+				file = "???"
+				line = 0
+			}
+		}
+		if f.flag&(Ldate|Ltime|Lmicroseconds) != 0 {
+			now = e.Time()
+		}
+		f.formatHeader(&xbuf, e.Lvl, now, e.Name, file, line)
+	}
+
+	
 	xbuf = append(xbuf, msg...)
 
 	if len(e.Data) > 0 {
@@ -240,7 +240,7 @@ func (f *minformatter) Log(e Event) error {
 	}
 
 	// Now write the message to the tree of chained writers.
-	// If the tree root is a LevelWriter, provide the info about Level
+	// If the tree root is a EventWriter, provide the orignal event too.
 	var err error
 	if l, ok := f.out.(EvWriter); ok {
 		_, err = l.EvWrite(e, xbuf)
@@ -253,6 +253,34 @@ func (f *minformatter) Log(e Event) error {
 
 	return err
 }
+
+// No reason to create another byte.Buffer when we already have one.
+// So let's pass it to a custom version of MarshalKeyvals()
+func marshalKeyvals(w io.Writer, keyvals ...interface{}) error {
+	if len(keyvals) == 0 {
+		return nil
+	}
+	enc := logfmt.NewEncoder(w)
+	for i := 0; i < len(keyvals); i += 2 {
+		k, v := keyvals[i], keyvals[i+1]
+		if l, ok := v.(Lazy); ok {
+			v = l.evaluate()
+		}
+		err := enc.EncodeKeyval(k, v)
+		if err == logfmt.ErrUnsupportedKeyType {
+			continue
+		}
+		if _, ok := err.(*logfmt.MarshalerError); ok || err == logfmt.ErrUnsupportedValueType {
+			v = err
+			err = enc.EncodeKeyval(k, v)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 
 func (l *flxformatter) formatHeader(buf *[]byte, level syslog.Priority, t time.Time, name string, file string, line int) {
 
@@ -331,88 +359,3 @@ func (l *flxformatter) formatHeader(buf *[]byte, level syslog.Priority, t time.T
 		}
 	}
 }
-
-func (f *flxformatter) Log(e Event) error {
-
-	var now time.Time
-	var file string
-	var line int
-
-	if f.flag&(Lshortfile|Llongfile) != 0 {
-		if e.fok {
-			file, line = e.FileInfo()
-		} else {
-			file = "???"
-			line = 0
-		}
-	}
-	if f.flag&(Ldate|Ltime|Lmicroseconds) != 0 {
-		now = e.Time()
-	}
-
-	msg := e.Msg
-
-	buf := f.getBuffer()
-
-	xbuf := buf.tmp[:0]
-	f.formatHeader(&xbuf, e.Lvl, now, e.Name, file, line)
-
-	if f.flag&(Lcolor) != 0 && e.Lvl <= syslog.LOG_INFO {
-		xbuf = append(xbuf, fmt.Sprintf("\x1b[%dm%s\x1b[0m", 33, msg)...)
-	} else {
-		xbuf = append(xbuf, msg...)
-	}
-
-	if len(e.Data) > 0 {
-		xbuf = append(xbuf, ' ')
-		marshalKeyvals(&buf.Buffer, e.Data...)
-		xbuf = append(xbuf, buf.Buffer.Bytes()...)
-	}
-
-	// Finish up
-	if len(msg) == 0 || msg[len(msg)-1] != '\n' {
-		xbuf = append(xbuf, '\n')
-	}
-
-	// Now write the message to the tree of chained writers.
-	// If the tree root is a EventWriter, provide the orignal event too.
-	var err error
-	if l, ok := f.out.(EvWriter); ok {
-		_, err = l.EvWrite(e, xbuf)
-	} else {
-		_, err = f.out.Write(xbuf)
-	}
-
-	// release the buffer
-	f.putBuffer(buf)
-
-	return err
-}
-
-// No reason to create another byte.Buffer when we already have one.
-// So let's pass it to a custom version of MarshalKeyvals()
-func marshalKeyvals(w io.Writer, keyvals ...interface{}) error {
-	if len(keyvals) == 0 {
-		return nil
-	}
-	enc := logfmt.NewEncoder(w)
-	for i := 0; i < len(keyvals); i += 2 {
-		k, v := keyvals[i], keyvals[i+1]
-		if l, ok := v.(Lazy); ok {
-			v = l.evaluate()
-		}
-		err := enc.EncodeKeyval(k, v)
-		if err == logfmt.ErrUnsupportedKeyType {
-			continue
-		}
-		if _, ok := err.(*logfmt.MarshalerError); ok || err == logfmt.ErrUnsupportedValueType {
-			v = err
-			err = enc.EncodeKeyval(k, v)
-		}
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-

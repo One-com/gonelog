@@ -12,54 +12,60 @@ import (
 // atomiciy of the swapper to change Handler behaviour during flight.
 // Handlers not being Cloneable must be manually manipulated by the application
 // and replaced by Logger.SetHandler()
+//
 // Making a Handler Cloneable makes it possible for the framework to support the
-// standard top-level operations on it like StdFormatter and AutoColorer
+// standard top-level operations on it like StdFormatter and AutoColorer even
+// for Handlers which cannot atomically modify their behaviour.
+// The StdFormatter has a global lock, so it can be modfidied directly.
+//
 // The framework promises not to modify the Handler after it's in use.
 // In other words, once the first Log() method is called the Handler is not modifed.
 type CloneableHandler interface {
 	Handler
-	Clone() CloneableHandler
+	Clone(options ...HandlerOption) CloneableHandler
 }
 
-// USAutoColorer is the ability of a formatter to do AutoColoring detection
-// before being swapped in to start Logging.
-type USAutoColorer interface {
-	UnsyncedAutoColoring()
+// 
+type HandlerOption func(CloneableHandler)
+
+// AutoColorer is the ability of a formatter to do AutoColoring detection
+type AutoColorer interface {
+	AutoColoring()
 }
 
-// USFlagger is the ability of a formatter to set the formatter flags before
-// being swapped in to start logging
-type USFlagger interface {
-	UnsyncedSetFlags(flag int)
+type hasFlagsOption interface {
+	CloneableHandler
+	SetFlags(flags int) HandlerOption
 }
 
-// USPrefixer is the ability of a formatter to set the prefix before
-// being swapped in to start logging
-type USPrefixer interface {
-	UnsyncedSetPrefix(prefix string)
+type hasPrefixOption interface {
+	CloneableHandler
+	SetPrefix(prefix string) HandlerOption
 }
 
-// USOutputter is the ability of a formatter to set the output Writer before
-// being swapped in to start logging
-type USOutputter interface {
-	UnsyncedSetOutput(w io.Writer)
+type hasAutoColoringOption interface {
+	CloneableHandler
+	AutoColoring() HandlerOption
 }
 
-type WriterGetter interface {
-	// Not in the standard library, but needed here to swap formatting handlers
-	GetWriter() io.Writer
-}
 
 // AutoColoring swaps in a equivalent handler doing AutoColoring if possible
 func (h *swapper) AutoColoring() {
 	old := h.handler()
-	if clo, ok := old.(CloneableHandler); ok {
-		if _, ok := old.(USAutoColorer); ok {
-			new := clo.Clone()
-			new.(USAutoColorer).UnsyncedAutoColoring()
-			h.SwapHandler(new)
-		}
+
+	if handler, ok := old.(AutoColorer); ok {
+		handler.AutoColoring()
+		return
 	}
+
+	
+//	if clo, ok := old.(CloneableHandler); ok {
+	//	if _, ok := old.(USAutoColorer); ok {
+	//		new := clo.Clone()
+	//		new.(USAutoColorer).UnsyncedAutoColoring()
+		//h.SwapHandler(new)
+	//	}
+//	}
 }
 
 /*****************************************************************************/
@@ -70,19 +76,19 @@ func (h *swapper) AutoColoring() {
 
 // Flags return the Handler flags. Since Handlers are not modfied after being swapped in
 // (unless they are StdMutables) this is safe for all.
-func (h *swapper) Flags() int {
+func (h *swapper) Flags() (flag int) {
 	if handler, ok := h.handler().(ilog.StdFormatter); ok {
-		return handler.Flags()
+		flag = handler.Flags()
 	}
-	return 0
+	return
 }
 
 // Prefix - same as for flags
-func (h *swapper) Prefix() string {
+func (h *swapper) Prefix() (prefix string) {
 	if handler, ok := h.handler().(ilog.StdFormatter); ok {
-		return handler.Prefix()
+		prefix = handler.Prefix()
 	}
-	return ""
+	return
 }
 
 func (h *swapper) SetFlags(flag int) {
@@ -100,12 +106,10 @@ func (h *swapper) SetFlags(flag int) {
 	// flags from. That's your own fault.
 	// This operation only protects against outputting log-lines which
 	// are not well defined for "some" handler.
-	if clo, ok := old.(CloneableHandler); ok {
-		if _, ok := old.(USFlagger); ok {
-			new := clo.Clone()
-			new.(USFlagger).UnsyncedSetFlags(flag)
-			h.SwapHandler(new)
-		}
+	if clo, ok := old.(hasFlagsOption); ok {
+		opt := clo.SetFlags(flag)
+		new := clo.Clone(opt)
+		h.SwapHandler(new)
 	}
 }
 
@@ -115,12 +119,10 @@ func (h *swapper) SetPrefix(prefix string) {
 		handler.SetPrefix(prefix)
 		return
 	}
-	if clo, ok := old.(CloneableHandler); ok {
-		if _, ok := old.(USPrefixer); ok {
-			new := clo.Clone()
-			new.(USPrefixer).UnsyncedSetPrefix(prefix)
-			h.SwapHandler(new)
-		}
+	if clo, ok := old.(hasPrefixOption); ok {
+		opt := clo.SetPrefix(prefix)
+		new := clo.Clone(opt)
+		h.SwapHandler(new)
 	}
 }
 
@@ -132,17 +134,17 @@ func (h *swapper) SetOutput(w io.Writer) {
 	}
 	// changing output for some Handlers is actually possible without a swap,
 	// courtesy of the syncwriter
-	if f, ok := old.(WriterGetter); ok {
-		if s, ok := f.GetWriter().(*syncWriter); ok {
-			s.SetOutput(w)
-		} else { // then we have to swap
-			if clo, ok := old.(CloneableHandler); ok {
-				if _, ok := old.(USOutputter); ok {
-					new := clo.Clone()
-					new.(USOutputter).UnsyncedSetOutput(w)
-					h.SwapHandler(new)
-				}
-			}
-		}
-	}
+//	if f, ok := old.(WriterGetter); ok {
+//		if s, ok := f.GetWriter().(*syncWriter); ok {
+//			s.SetOutput(w)
+//		} else { // then we have to swap
+//			if clo, ok := old.(CloneableHandler); ok {
+//				if _, ok := old.(USOutputter); ok {
+//					new := clo.Clone()
+//					new.(USOutputter).UnsyncedSetOutput(w)
+//					h.SwapHandler(new)
+//				}
+//			}
+//		}
+//	}
 }

@@ -47,11 +47,6 @@ func (f *stdformatter) Prefix() string {
 	defer f.mu.Unlock()
 	return f.prefix
 }
-func (f *stdformatter) GetWriter() io.Writer {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	return f.out
-}
 
 // SetFlags sets the output flags for the logger.
 func (f *stdformatter) SetFlags(flag int) {
@@ -193,21 +188,13 @@ func (l *stdformatter) Log(e Event) error {
 	return err
 }
 
-// Clone
-func (f *stdformatter) Clone() (new CloneableHandler) {
-	// Create a new stdformatter with the same attributes, but with a new
-	// buf and new mutex (those can't be copied)
-	new = &stdformatter{
-		out:    f.out,
-		flag:   f.flag,
-		prefix: f.prefix,
-	}
-	return
-}
-
 // Just set the color flag if it seems like TTY
-func (f *stdformatter) UnsyncedAutoColoring() {
+func (f *stdformatter) AutoColoring() {
 	var istty bool
+
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	w := f.out
 	if tw, ok := w.(MaybeTtyWriter); ok {
 		istty = tw.IsTty()
