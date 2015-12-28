@@ -77,6 +77,22 @@ type buffer struct {
 	tmp [128]byte // temporary byte array for creating headers.
 }
 
+var pool sync.Pool
+
+func init() {
+	pool = sync.Pool{New: func() interface{} { return new(buffer) }}
+}
+
+func getBuffer() *buffer {
+	b := pool.Get().(*buffer)
+	b.Reset()
+	return b
+}
+func putBuffer(b *buffer) {
+	pool.Put(b)
+}
+
+
 type flxformatter struct {
 	flag   int    // controlling the format
 	prefix string // prefix to write at beginning of each line, after any level/timestamp
@@ -84,8 +100,6 @@ type flxformatter struct {
 
 	pfxarr *[8]string // prefixes to log lines for the 8 syslog levels.
 	order  *[]uint8   // controls the order of the header
-
-	pool *sync.Pool // of buffer
 }
 
 
@@ -93,7 +107,6 @@ func NewMinFormatter(w io.Writer) *flxformatter {
 	f := &flxformatter{
 		flag: LminFlags,
 		out:  w,
-		pool: &sync.Pool{New: func() interface{} { return new(buffer) }},
 	}
 	return f
 }
@@ -105,7 +118,6 @@ func NewFlxFormatter(w io.Writer, prefix string, flag int) *flxformatter {
 		pfxarr: &syslog_lvlpfx,
 		prefix: prefix,
 		flag:   flag,
-		pool:   &sync.Pool{New: func() interface{} { return new(buffer) }},
 	}
 	return f
 }
@@ -168,14 +180,6 @@ func (f *flxformatter) SetHeaderOrder(arr *[]uint8) {
 }
 
 /*********************************************************************/
-func (l *flxformatter) getBuffer() *buffer {
-	b := l.pool.Get().(*buffer)
-	b.Reset()
-	return b
-}
-func (l *flxformatter) putBuffer(b *buffer) {
-	l.pool.Put(b)
-}
 
 // Cheap integer to fixed-width decimal ASCII.  Give a negative width to avoid zero-padding.
 func itoa(buf *[]byte, i int, wid int) {
@@ -203,7 +207,7 @@ func (f *flxformatter) Log(e Event) error {
 	var line int
 
 	msg := e.Msg
-	buf := f.getBuffer()
+	buf := getBuffer()
 	xbuf := buf.tmp[:0]
 
 	if f.flag == LminFlags { // Minimal mode
@@ -249,7 +253,7 @@ func (f *flxformatter) Log(e Event) error {
 	}
 
 	// release the buffer
-	f.putBuffer(buf)
+	putBuffer(buf)
 
 	return err
 }
