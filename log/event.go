@@ -14,14 +14,14 @@ type Event struct {
 	*event
 }
 
-var pool *sync.Pool
+var evpool *sync.Pool
 
 func init() {
-	pool = &sync.Pool{New: func() interface{} { return new(event) }}
+	evpool = &sync.Pool{New: func() interface{} { return new(event) }}
 }
 
 func getPoolEvent(l syslog.Priority, name string, msg string) *event {
-	e := pool.Get().(*event)
+	e := evpool.Get().(*event)
 	*e = event{}
 	e.Lvl = l
 	e.Msg = msg
@@ -29,7 +29,7 @@ func getPoolEvent(l syslog.Priority, name string, msg string) *event {
 	return e
 }
 func freePoolEvent(e *event) {
-	pool.Put(e)
+	evpool.Put(e)
 }
 
 // A log event.
