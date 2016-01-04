@@ -8,8 +8,6 @@ import (
 	//	"os"
 )
 
-const ioctlReadTermios = syscall.TCGETS
-
 type Termios syscall.Termios
 
 type fder interface {
