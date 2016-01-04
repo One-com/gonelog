@@ -71,12 +71,12 @@ func ExampleContext() {
 	case <- ok:
 	}
 	// Output:
-	//[ERR]PFX:api_test.go:50: hi key=val
-	//[WRN]PFX:api_test.go:51: lazy hip=slow
-	//[NOT]PFX:api_test.go:26: H1 tra=la
-	//[NOT]PFX:api_test.go:27: H2
-	//[NOT]PFX:api_test.go:31: G tra=la a=b
-	//[NOT]PFX:api_test.go:38: cancelled tra=la
+	//<3>PFX:api_test.go:50: hi key=val
+	//<4>PFX:api_test.go:51: lazy hip=slow
+	//<5>PFX:api_test.go:26: H1 tra=la
+	//<5>PFX:api_test.go:27: H2
+	//<5>PFX:api_test.go:31: G tra=la a=b
+	//<5>PFX:api_test.go:38: cancelled tra=la
 }
 
 //----------------------------------------------------------------
@@ -144,7 +144,7 @@ func ExampleGoneLogger() {
 
 func ExamplePrintIgnores() {
 	l := log.GetLogger("my/lib")
-	h := log.NewFlxFormatter(log.SyncWriter(os.Stdout), "", log.Llevel|log.Lname)
+	h := log.NewStdFormatter(log.SyncWriter(os.Stdout), "", log.Llevel|log.Lname)
 	l.SetHandler(h)
 	l.AutoColoring()
 	l.SetLevel(syslog.LOG_ERROR)
@@ -158,7 +158,7 @@ func ExamplePrintIgnores() {
 
 func ExampleSubLogger() {
 	l := log.GetLogger("my/lib")
-	h := log.NewFlxFormatter(log.SyncWriter(os.Stdout), "", log.Llevel|log.Lname)
+	h := log.NewStdFormatter(log.SyncWriter(os.Stdout), "", log.Llevel|log.Lname)
 	l.SetHandler(h)
 	l.SetLevel(syslog.LOG_ERROR)
 
@@ -174,7 +174,7 @@ func ExampleSubLogger() {
 
 func ExampleNamedLogger() {
 	l := log.GetLogger("my/lib")
-	h := log.NewFlxFormatter(log.SyncWriter(os.Stdout), "", log.Llevel|log.Lname)
+	h := log.NewStdFormatter(log.SyncWriter(os.Stdout), "", log.Llevel|log.Lname)
 	l.SetHandler(h)
 	l2 := log.GetLogger("my/lib/module")
 

@@ -1,7 +1,7 @@
 package log
 
 import (
-	"bytes"
+//	"bytes"
 	"fmt"
 	"io"
 	"sync"
@@ -14,14 +14,14 @@ import (
 // NewStdFormatter creates a Handler which formats log lines compatible with the std library.
 // Note that the std library assumes is has to add a mutex to the io.Writer for sync - unlike
 // when using a pre-synced io.Writer like SyncWriter
-func NewStdFormatter(w io.Writer, prefix string, flag int) *stdformatter {
-	f := &stdformatter{
-		out:    w,
-		prefix: prefix,
-		flag:   flag,
-	}
-	return f
-}
+//func NewStdFormatter(w io.Writer, prefix string, flag int) *stdformatter {
+//	f := &stdformatter{
+//		out:    w,
+//		prefix: prefix,
+//		flag:   flag,
+//	}
+//	return f
+//}
 
 // stdformatter is right out of the standard library
 // Plus ability to log KV attributes and a level prefix
@@ -34,7 +34,7 @@ type stdformatter struct {
 	// A buffer for when we only have one global lock around
 	// both formatting and writing
 	mu  sync.Mutex
-	buf []byte
+//	buf []byte
 }
 
 func (f *stdformatter) Flags() int {
@@ -67,7 +67,11 @@ func (f *stdformatter) SetOutput(w io.Writer) {
 	f.out = w
 }
 
-func (l *stdformatter) formatHeader(buf *[]byte, level syslog.Priority, t time.Time, file string, line int) {
+//func (l *stdformatter) formatHeader(buf *[]byte, level syslog.Priority, t time.Time, name string, file string, line int) {
+//
+//}
+
+func (l *stdformatter) formatHeader(buf *[]byte, level syslog.Priority, t time.Time, name string, file string, line int) {
 
 	// Add level to std log features.
 	if l.flag&(Llevel) != 0 {
@@ -159,32 +163,34 @@ func (l *stdformatter) Log(e Event) error {
 
 	// By Locking here we can share the same buffer between all log events going
 	// through this formatter.
-	l.mu.Lock()
-	l.buf = l.buf[:0]
-	l.formatHeader(&l.buf, e.Lvl, now, file, line)
-	l.buf = append(l.buf, s...)
+	//	l.mu.Lock()
+	buf := getBuffer()
+	xbuf := buf.tmp[:0]
+//	l.buf = l.buf[:0]
+	l.formatHeader(&xbuf, e.Lvl, now, e.Name, file, line)
+	xbuf = append(xbuf, s...)
 
 	// Arhh.. we need to not throw info away
 	if len(e.Data) > 0 {
-		var xbuf bytes.Buffer
-		xbuf.WriteString(" ")
-		marshalKeyvals(&xbuf, e.Data...)
-		l.buf = append(l.buf, xbuf.Bytes()...)
+		xbuf = append(xbuf, ' ')
+		marshalKeyvals(&buf.Buffer, e.Data...)
+		xbuf = append(xbuf, buf.Buffer.Bytes()...)
 	}
 	if len(s) == 0 || s[len(s)-1] != '\n' {
-		l.buf = append(l.buf, '\n')
+		xbuf = append(xbuf, '\n')
 	}
 
 	// Now write the message to the tree of chained writers.
 	// If the tree root is a EventWriter, provide the original event too.
 	var err error
 	if ev, ok := l.out.(EvWriter); ok {
-		_, err = ev.EvWrite(e, l.buf)
+		_, err = ev.EvWrite(e, xbuf)
 	} else {
-		_, err = l.out.Write(l.buf)
+		_, err = l.out.Write(xbuf)
 	}
-
-	l.mu.Unlock()
+	// release the buffer
+	putBuffer(buf)
+//	l.mu.Unlock()
 	return err
 }
 

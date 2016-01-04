@@ -130,6 +130,11 @@ func (l *Logger) SetHandler(h Handler) {
 	l.h.SwapHandler(h)
 }
 
+func (l *Logger) ApplyHandlerOptions(opt ...HandlerOption) {
+	l.h.ApplyHandlerOptions(opt...)
+}
+
+
 // Autocoloring asks the current Handler to test if there's a TTY attached to an
 // output and if so, apply coloring to the formatter.
 func (l *Logger) AutoColoring() {

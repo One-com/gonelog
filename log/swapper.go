@@ -25,13 +25,8 @@ type CloneableHandler interface {
 	Clone(options ...HandlerOption) CloneableHandler
 }
 
-// 
+//
 type HandlerOption func(CloneableHandler)
-
-// AutoColorer is the ability of a formatter to do AutoColoring detection
-type AutoColorer interface {
-	AutoColoring()
-}
 
 type hasFlagsOption interface {
 	CloneableHandler
@@ -43,29 +38,14 @@ type hasPrefixOption interface {
 	SetPrefix(prefix string) HandlerOption
 }
 
+type hasOutputOption interface {
+	CloneableHandler
+	SetOutput(w io.Writer) HandlerOption
+}
+
 type hasAutoColoringOption interface {
 	CloneableHandler
 	AutoColoring() HandlerOption
-}
-
-
-// AutoColoring swaps in a equivalent handler doing AutoColoring if possible
-func (h *swapper) AutoColoring() {
-	old := h.handler()
-
-	if handler, ok := old.(AutoColorer); ok {
-		handler.AutoColoring()
-		return
-	}
-
-	
-//	if clo, ok := old.(CloneableHandler); ok {
-	//	if _, ok := old.(USAutoColorer); ok {
-	//		new := clo.Clone()
-	//		new.(USAutoColorer).UnsyncedAutoColoring()
-		//h.SwapHandler(new)
-	//	}
-//	}
 }
 
 /*****************************************************************************/
@@ -93,10 +73,6 @@ func (h *swapper) Prefix() (prefix string) {
 
 func (h *swapper) SetFlags(flag int) {
 	old := h.handler()
-	if handler, ok := old.(ilog.StdMutableFormatter); ok {
-		handler.SetFlags(flag)
-		return
-	}
 	// we have to atomically replace the handler with one with the new flag,
 	// since locking can only be assumed to be done in 2 places:
 	// swapper and stdformatter.out (when it's a syncwriter or equivalent),
@@ -115,10 +91,6 @@ func (h *swapper) SetFlags(flag int) {
 
 func (h *swapper) SetPrefix(prefix string) {
 	old := h.handler()
-	if handler, ok := old.(ilog.StdMutableFormatter); ok {
-		handler.SetPrefix(prefix)
-		return
-	}
 	if clo, ok := old.(hasPrefixOption); ok {
 		opt := clo.SetPrefix(prefix)
 		new := clo.Clone(opt)
@@ -128,23 +100,28 @@ func (h *swapper) SetPrefix(prefix string) {
 
 func (h *swapper) SetOutput(w io.Writer) {
 	old := h.handler()
-	if handler, ok := old.(ilog.StdMutableFormatter); ok {
-		handler.SetOutput(w)
-		return
+	if clo, ok := old.(hasOutputOption); ok {
+		opt := clo.SetOutput(w)
+		new := clo.Clone(opt)
+		h.SwapHandler(new)
 	}
-	// changing output for some Handlers is actually possible without a swap,
-	// courtesy of the syncwriter
-//	if f, ok := old.(WriterGetter); ok {
-//		if s, ok := f.GetWriter().(*syncWriter); ok {
-//			s.SetOutput(w)
-//		} else { // then we have to swap
-//			if clo, ok := old.(CloneableHandler); ok {
-//				if _, ok := old.(USOutputter); ok {
-//					new := clo.Clone()
-//					new.(USOutputter).UnsyncedSetOutput(w)
-//					h.SwapHandler(new)
-//				}
-//			}
-//		}
-//	}
+}
+
+// AutoColoring swaps in a equivalent handler doing AutoColoring if possible
+func (h *swapper) AutoColoring() {
+	old := h.handler()
+
+	if clo, ok := old.(hasAutoColoringOption); ok {
+		opt := clo.AutoColoring()
+		new := clo.Clone(opt)
+		h.SwapHandler(new)
+	}
+}
+
+func (h *swapper) ApplyHandlerOptions(opt ...HandlerOption) {
+	old := h.handler()
+	if clo, ok := old.(CloneableHandler); ok {
+		new := clo.Clone(opt...)
+		h.SwapHandler(new)
+	}
 }

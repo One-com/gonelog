@@ -16,26 +16,8 @@ import (
 // which doesn't chain to other Handlers, but
 // instead transforms the *Event to a []byte and calls an io.Writer
 
-// A lot of time is spent in these functions, so 3 different formatters are provided:
-// * stdformatter - which does exactly the same as the Go std log library
-// * minformatter - which doesn't care about timestamps or code-info and only logs <level>msg
-// * flxformatter - which enabled all the features, including coloring and ordering
-
-// constants for the flxformatter
-const (
-	// logfield features
-	Flevel uint8 = iota
-	Ftime
-	Fpid
-	Fprefix
-	Fcode
-	Fname
-	// After these comes the message and possible KV attributes
-)
-
 // dynamic formatting for the flxformatter
 var (
-	header_order  = []uint8{Flevel, Fprefix, Ftime, Fname, Fcode}
 	level_colors  = [8]string{"30", "31;1;7", "31;1", "31", "33", "32", "37", "37;2"}
 	term_lvlpfx   = [8]string{"[EMR]", "[ALT]", "[CRT]", "[ERR]", "[WRN]", "[NOT]", "[INF]", "[DBG]"}
 	syslog_lvlpfx = [8]string{"<0>", "<1>", "<2>", "<3>", "<4>", "<5>", "<6>", "<7>"}
@@ -99,7 +81,6 @@ type flxformatter struct {
 	out    io.Writer
 
 	pfxarr *[8]string // prefixes to log lines for the 8 syslog levels.
-	order  *[]uint8   // controls the order of the header
 }
 
 
@@ -111,10 +92,9 @@ func NewMinFormatter(w io.Writer) *flxformatter {
 	return f
 }
 
-func NewFlxFormatter(w io.Writer, prefix string, flag int) *flxformatter {
+func NewStdFormatter(w io.Writer, prefix string, flag int) *flxformatter {
 	f := &flxformatter{
 		out:    w,
-		order:  &header_order,
 		pfxarr: &syslog_lvlpfx,
 		prefix: prefix,
 		flag:   flag,
@@ -136,6 +116,7 @@ func (f *flxformatter) Clone(options ...HandlerOption) CloneableHandler {
 	return new
 }
 
+// To support stdlib query functions
 func (f *flxformatter) Prefix() string {
 	return f.prefix
 }
@@ -143,41 +124,79 @@ func (f *flxformatter) Flags() int {
 	return f.flag
 }
 
+// Generate options to create a new Handler
 func (f *flxformatter) AutoColoring() HandlerOption {
 	return func (c CloneableHandler) {
 		var istty bool
-		o := c.(*flxformatter)
-		w := o.out
-		if tw, ok := w.(MaybeTtyWriter); ok {
-			istty = tw.IsTty()
-		} else {
-			istty = term.IsTty(w)
+		if o,ok := c.(*flxformatter); ok {
+			w := o.out
+			if tw, ok := w.(MaybeTtyWriter); ok {
+				istty = tw.IsTty()
+			} else {
+				istty = term.IsTty(w)
+			}
+
+			if istty {
+				o.flag = o.flag | Lcolor
+			} else {
+				o.flag = o.flag & ^Lcolor
+			}
 		}
-		
-		if istty {
-			o.flag = o.flag | Lcolor
-		} else {
-			o.flag = o.flag & ^Lcolor
-		}		
 	}
 }
 
+// SetFlags creates a HandlerOption to set flags.
+// This is a method wrapper around FlagsOpt to be able to have the swapper
+// call it genericly on different formatters to support
+// stdlib operations SetFlags/SetPrefix/SetOutput
 func (f *flxformatter) SetFlags(flags int) HandlerOption {
-	return func (c CloneableHandler) { c.(*flxformatter).flag = flags }
+	return FlagsOpt(flags)
 }
 
 func (f *flxformatter) SetPrefix(prefix string) HandlerOption {
-	return func (c CloneableHandler) { c.(*flxformatter).prefix = prefix }
+	return PrefixOpt(prefix)
 }
 
-
-//func (f *flxformatter) SetLevelPrefixes(arr *[8]string) {
-//	f.pfxarr = arr
-//}
-
-func (f *flxformatter) SetHeaderOrder(arr *[]uint8) {
-	f.order = arr
+func (f *flxformatter) SetOutput(w io.Writer) HandlerOption {
+	return OutputOpt(w)
 }
+
+// Formatter Option to set flags
+func FlagsOpt(flags int) HandlerOption {
+	return func (c CloneableHandler) {
+		if h, ok := c.(*flxformatter); ok {
+			h.flag = flags
+		}
+	}
+}
+
+// Formatter option to set Prefix
+func PrefixOpt(prefix string) HandlerOption {
+	return func (c CloneableHandler) {
+		if h, ok := c.(*flxformatter); ok {
+			h.prefix = prefix
+		}
+	}
+}
+
+// Formatter option so set Output
+func OutputOpt(w io.Writer) HandlerOption {
+	return func (c CloneableHandler) {
+		if h, ok := c.(*flxformatter); ok {
+			h.out = w
+		}
+	}
+}
+
+// Formatter option to set LevelPrefixes
+func LevelPrefixOpt(arr *[8]string) HandlerOption {
+	return func (c CloneableHandler) {
+		if h, ok := c.(*flxformatter); ok {
+			h.pfxarr = arr
+		}
+	}
+}
+
 
 /*********************************************************************/
 
@@ -229,7 +248,7 @@ func (f *flxformatter) Log(e Event) error {
 		f.formatHeader(&xbuf, e.Lvl, now, e.Name, file, line)
 	}
 
-	
+
 	xbuf = append(xbuf, msg...)
 
 	if len(e.Data) > 0 {
@@ -288,78 +307,76 @@ func marshalKeyvals(w io.Writer, keyvals ...interface{}) error {
 
 func (l *flxformatter) formatHeader(buf *[]byte, level syslog.Priority, t time.Time, name string, file string, line int) {
 
-	var field uint8
-	for _, field = range header_order {
-		switch field {
-		case Flevel:
-			if l.flag&(Llevel) != 0 {
-				if l.flag&(Lcolor) != 0 {
-					*buf = append(*buf,
-						fmt.Sprintf("\x1b[%sm%s\x1b[0m",
-							level_colors[level],
-							(*l.pfxarr)[level])...)
-				} else {
-					*buf = append(*buf, (*l.pfxarr)[level]...) // level prefix
-				}
-			}
-		case Fname:
-			*buf = append(*buf, " ("...)
-			*buf = append(*buf, name...)
-			*buf = append(*buf, ") "...)
-		case Ftime:
-			if l.flag&(Ldate|Ltime|Lmicroseconds) != 0 {
-				if l.flag&LUTC != 0 {
-					t = t.UTC()
-				}
-				if l.flag&Ldate != 0 {
-					year, month, day := t.Date()
-					itoa(buf, year, 4)
-					*buf = append(*buf, '/')
-					itoa(buf, int(month), 2)
-					*buf = append(*buf, '/')
-					itoa(buf, day, 2)
-					*buf = append(*buf, ' ')
-				}
-				if l.flag&(Ltime|Lmicroseconds) != 0 {
-					hour, min, sec := t.Clock()
-					itoa(buf, hour, 2)
-					*buf = append(*buf, ':')
-					itoa(buf, min, 2)
-					*buf = append(*buf, ':')
-					itoa(buf, sec, 2)
-					if l.flag&Lmicroseconds != 0 {
-						*buf = append(*buf, '.')
-						itoa(buf, t.Nanosecond()/1e3, 6)
-					}
-					*buf = append(*buf, ' ')
-				}
-			}
-		case Fpid:
-			if l.flag&(Lpid) != 0 {
-				*buf = append(*buf, '[')
-				itoa(buf, pid, -1)
-				*buf = append(*buf, "] "...)
-			}
-		case Fcode:
-			if l.flag&(Lshortfile|Llongfile) != 0 {
-				if l.flag&Lshortfile != 0 {
-					short := file
-					for i := len(file) - 1; i > 0; i-- {
-						if file[i] == '/' {
-							short = file[i+1:]
-							break
-						}
-					}
-					file = short
-				}
-				*buf = append(*buf, file...)
-				*buf = append(*buf, ':')
-				itoa(buf, line, -1)
-				*buf = append(*buf, ": "...)
-			}
-		case Fprefix:
-			*buf = append(*buf, l.prefix...) // add any custom prefix
 
+	if l.flag&(Llevel) != 0 {
+		if l.flag&(Lcolor) != 0 {
+			*buf = append(*buf,
+				fmt.Sprintf("\x1b[%sm%s\x1b[0m",
+					level_colors[level],
+					(*l.pfxarr)[level])...)
+		} else {
+			*buf = append(*buf, (*l.pfxarr)[level]...) // level prefix
 		}
 	}
+
+	*buf = append(*buf, l.prefix...) // add any custom prefix
+
+	if l.flag&(Lname) != 0 {
+		*buf = append(*buf, " ("...)
+		*buf = append(*buf, name...)
+		*buf = append(*buf, ") "...)
+	}
+
+
+	if l.flag&(Ldate|Ltime|Lmicroseconds) != 0 {
+		if l.flag&LUTC != 0 {
+			t = t.UTC()
+		}
+		if l.flag&Ldate != 0 {
+			year, month, day := t.Date()
+			itoa(buf, year, 4)
+			*buf = append(*buf, '/')
+			itoa(buf, int(month), 2)
+			*buf = append(*buf, '/')
+			itoa(buf, day, 2)
+			*buf = append(*buf, ' ')
+		}
+		if l.flag&(Ltime|Lmicroseconds) != 0 {
+			hour, min, sec := t.Clock()
+			itoa(buf, hour, 2)
+			*buf = append(*buf, ':')
+			itoa(buf, min, 2)
+			*buf = append(*buf, ':')
+			itoa(buf, sec, 2)
+			if l.flag&Lmicroseconds != 0 {
+				*buf = append(*buf, '.')
+				itoa(buf, t.Nanosecond()/1e3, 6)
+			}
+			*buf = append(*buf, ' ')
+		}
+	}
+
+	if l.flag&(Lpid) != 0 {
+		*buf = append(*buf, '[')
+		itoa(buf, pid, -1)
+		*buf = append(*buf, "] "...)
+	}
+
+	if l.flag&(Lshortfile|Llongfile) != 0 {
+		if l.flag&Lshortfile != 0 {
+			short := file
+			for i := len(file) - 1; i > 0; i-- {
+				if file[i] == '/' {
+					short = file[i+1:]
+					break
+				}
+			}
+			file = short
+		}
+		*buf = append(*buf, file...)
+		*buf = append(*buf, ':')
+		itoa(buf, line, -1)
+		*buf = append(*buf, ": "...)
+	}
+
 }

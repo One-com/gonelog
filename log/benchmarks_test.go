@@ -25,7 +25,7 @@ func BenchmarkStdPrintln(b *testing.B) {
 // Similar using flxformatter
 func BenchmarkFlxPrintln(b *testing.B) {
 	const testString = "test"
-	h := NewFlxFormatter(ioutil.Discard, "", LstdFlags)
+	h := NewStdFormatter(ioutil.Discard, "", LstdFlags)
 	l := NewLogger(LvlDEFAULT, h)
 	l.DoTime(true)
 	for i := 0; i < b.N; i++ {
@@ -55,7 +55,7 @@ func BenchmarkParallelStdPrintln(b *testing.B) {
 // similar but with flxformatter
 func BenchmarkParallelFlxPrintln(b *testing.B) {
 	const testString = "test"
-	h := NewFlxFormatter(ioutil.Discard, "", LstdFlags)
+	h := NewStdFormatter(ioutil.Discard, "", LstdFlags)
 	l := NewLogger(LvlDEFAULT, h)
 	l.DoTime(true)
 
