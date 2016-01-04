@@ -74,7 +74,7 @@ func putBuffer(b *buffer) {
 	pool.Put(b)
 }
 
-
+// Basic line based formatting handler
 type stdformatter struct {
 	flag   int    // controlling the format
 	prefix string // prefix to write at beginning of each line, after any level/timestamp
@@ -83,15 +83,24 @@ type stdformatter struct {
 	pfxarr *[8]string // prefixes to log lines for the 8 syslog levels.
 }
 
-
-func NewMinFormatter(w io.Writer) *stdformatter {
+// NewMinFormatter creates a standard formatter and applied the supplied options
+// It will default log.LminFlags to provide simple <level>message logging
+func NewMinFormatter(w io.Writer, options ... HandlerOption) *stdformatter {
+	// Default formatter
 	f := &stdformatter{
 		flag: LminFlags,
+		pfxarr: &syslog_lvlpfx,
 		out:  w,
+	}
+	// Apply the options
+	for _, option := range options {
+		option(f)
 	}
 	return f
 }
 
+// NewStdFormatter creates a standard formatter capable of simulating the standard
+// library logger.
 func NewStdFormatter(w io.Writer, prefix string, flag int) *stdformatter {
 	f := &stdformatter{
 		out:    w,
@@ -233,6 +242,8 @@ func (f *stdformatter) Log(e Event) error {
 		xbuf = append(xbuf, '<')
 		itoa(&xbuf, int(e.Lvl), 1)
 		xbuf = append(xbuf, '>')
+		xbuf = append(xbuf, f.prefix...) // add any custom prefix
+
 	} else {
 		if f.flag&(Lshortfile|Llongfile) != 0 {
 			if e.fok {

@@ -81,8 +81,32 @@ func ExampleContext() {
 
 //----------------------------------------------------------------
 
-func ExampleGoneLogger() {
-	h := log.NewStdFormatter(os.Stdout, "", log.Llevel)
+func ExampleMinimal() {
+	log.Minimal() // change default Logger to not be stdlib compatible but minimal
+	log.ERROR("fejl")
+	// Output:
+	// <3>fejl
+}
+
+func ExampleNewMinLogger() {
+	h := log.NewMinFormatter(log.SyncWriter(os.Stdout), log.PrefixOpt("PFX:"))
+	l := log.NewLogger(syslog.LOG_WARNING, h)
+	l.ERROR("fejl")
+	// Output:
+	// <3>PFX:fejl
+}
+
+// Compatible with std lib
+func ExampleNew() {
+	l := log.New(os.Stdout, "", log.Llevel)
+	l.Println("notice")
+	// Output:
+	// <6>notice
+
+}
+
+func ExampleNewLogger() {
+	h := log.NewStdFormatter(log.SyncWriter(os.Stdout), "", log.Llevel)
 	l := log.NewLogger(syslog.LOG_WARNING, h)
 	l.SetDefaultLevel(syslog.LOG_NOTICE, false)
 
@@ -142,13 +166,13 @@ func ExampleGoneLogger() {
 	l.Fatal("fatal")
 }
 
-func ExamplePrintIgnores() {
+func ExampleSetPrintLevel() {
 	l := log.GetLogger("my/lib")
 	h := log.NewStdFormatter(log.SyncWriter(os.Stdout), "", log.Llevel|log.Lname)
 	l.SetHandler(h)
 	l.AutoColoring()
 	l.SetLevel(syslog.LOG_ERROR)
-	l.SetDefaultLevel(syslog.LOG_NOTICE,false)
+	l.SetPrintLevel(syslog.LOG_NOTICE,false)
 
 	l.Print("ignoring level")
 	// Output:
@@ -156,7 +180,7 @@ func ExamplePrintIgnores() {
 
 }
 
-func ExampleSubLogger() {
+func ExampleWith() {
 	l := log.GetLogger("my/lib")
 	h := log.NewStdFormatter(log.SyncWriter(os.Stdout), "", log.Llevel|log.Lname)
 	l.SetHandler(h)
@@ -172,7 +196,7 @@ func ExampleSubLogger() {
 
 }
 
-func ExampleNamedLogger() {
+func ExampleGetLogger() {
 	l := log.GetLogger("my/lib")
 	h := log.NewStdFormatter(log.SyncWriter(os.Stdout), "", log.Llevel|log.Lname)
 	l.SetHandler(h)
@@ -183,4 +207,16 @@ func ExampleNamedLogger() {
 	l3.NOTICE("notice")
 	// Output:
 	// <5> (my/lib/module) notice k=v
+}
+
+func ExampleApplyHandlerOptions() {
+	h := log.NewMinFormatter(log.SyncWriter(os.Stdout), log.PrefixOpt("PFX:"))
+	l := log.GetLogger("mylog")
+	l.SetHandler(h)
+	l.ERROR("fejl")
+	l.ApplyHandlerOptions(log.FlagsOpt(log.Llevel|log.Lname))
+	l.WARN("advarsel")
+	// Output:
+	// <3>PFX:fejl
+	// <4>PFX: (mylog) advarsel
 }

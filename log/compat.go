@@ -9,7 +9,7 @@ import (
 
 // New() will instantiate a logger with the same functionality (and limitations) as the std lib logger.
 func New(out io.Writer, prefix string, flags int) *Logger {
-	h := NewStdFormatter(out, prefix, flags)
+	h := NewStdFormatter(SyncWriter(out), prefix, flags)
 	l := NewLogger(LvlDEFAULT, h) // not a part of the hierachy
 	l.DoTime(true)
 	return l
