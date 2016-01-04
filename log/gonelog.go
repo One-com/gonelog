@@ -130,6 +130,14 @@ func (l *Logger) SetHandler(h Handler) {
 	l.h.SwapHandler(h)
 }
 
+// ApplyHandlerOptions clones the current Handles and tries to apply the supplied
+// HandlerOptions to the clone - then swaps in the clone atomically to not loose
+// Log events.
+// Supplied HandlerOptions must be compatible with the current Handler, or the Handler
+// will/(should) reject it and treat it as a No-Op.
+// If the attached Handler does not support Cloning or HandlerOptions and/or you are
+// using a more complext Handler hierarchy, you should probably create the new Handler
+// Manually and use SetHandler()
 func (l *Logger) ApplyHandlerOptions(opt ...HandlerOption) {
 	l.h.ApplyHandlerOptions(opt...)
 }

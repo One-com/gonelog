@@ -16,18 +16,21 @@ import (
 // Making a Handler Cloneable makes it possible for the framework to support the
 // standard top-level operations on it like StdFormatter and AutoColorer even
 // for Handlers which cannot atomically modify their behaviour.
-// The StdFormatter has a global lock, so it can be modfidied directly.
 //
 // The framework promises not to modify the Handler after it's in use.
-// In other words, once the first Log() method is called the Handler is not modifed.
+// Once a Handler has been swapped in, it cannot be changed.
+
+// ClonableHandlers allows you to call ApplyHandlerOptions() on a Logger to swap
+// in a new Handler modified by the provided HandlerOptions
 type CloneableHandler interface {
 	Handler
 	Clone(options ...HandlerOption) CloneableHandler
 }
 
-//
+// HandlerOption is an option-function provided by the package of a Handler
 type HandlerOption func(CloneableHandler)
 
+// Some special cloneable handler with support for stdlib tweaks
 type hasFlagsOption interface {
 	CloneableHandler
 	SetFlags(flags int) HandlerOption

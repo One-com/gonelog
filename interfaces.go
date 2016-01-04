@@ -92,8 +92,9 @@ type StdFormatter interface {
 	Prefix() string
 }
 
-// StdMutableFormatter is the interface for a Logger or formatting Handler which directly
+// StdMutableFormatter is the interface for a Logger which directly
 // can change the stdlib flags, prefix and output io.Writer attributes in a synchronized manner.
+// Since gonelog Handlers are immutable, it's not used for Formatters.
 type StdMutableFormatter interface {
 	StdFormatter
 	SetFlags(flag int)

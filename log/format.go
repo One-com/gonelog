@@ -16,7 +16,7 @@ import (
 // which doesn't chain to other Handlers, but
 // instead transforms the *Event to a []byte and calls an io.Writer
 
-// dynamic formatting for the flxformatter
+// dynamic formatting for the stdformatter
 var (
 	level_colors  = [8]string{"30", "31;1;7", "31;1", "31", "33", "32", "37", "37;2"}
 	term_lvlpfx   = [8]string{"[EMR]", "[ALT]", "[CRT]", "[ERR]", "[WRN]", "[NOT]", "[INF]", "[DBG]"}
@@ -75,7 +75,7 @@ func putBuffer(b *buffer) {
 }
 
 
-type flxformatter struct {
+type stdformatter struct {
 	flag   int    // controlling the format
 	prefix string // prefix to write at beginning of each line, after any level/timestamp
 	out    io.Writer
@@ -84,16 +84,16 @@ type flxformatter struct {
 }
 
 
-func NewMinFormatter(w io.Writer) *flxformatter {
-	f := &flxformatter{
+func NewMinFormatter(w io.Writer) *stdformatter {
+	f := &stdformatter{
 		flag: LminFlags,
 		out:  w,
 	}
 	return f
 }
 
-func NewStdFormatter(w io.Writer, prefix string, flag int) *flxformatter {
-	f := &flxformatter{
+func NewStdFormatter(w io.Writer, prefix string, flag int) *stdformatter {
+	f := &stdformatter{
 		out:    w,
 		pfxarr: &syslog_lvlpfx,
 		prefix: prefix,
@@ -103,8 +103,8 @@ func NewStdFormatter(w io.Writer, prefix string, flag int) *flxformatter {
 }
 
 // Clone returns a clone of the current handler for tweaking and swapping in
-func (f *flxformatter) Clone(options ...HandlerOption) CloneableHandler {
-	new := &flxformatter{}
+func (f *stdformatter) Clone(options ...HandlerOption) CloneableHandler {
+	new := &stdformatter{}
 	// We shamelessly copy the whole formatter. This is ok, since everything
 	// mutable is pointer types (like pool) and we can inherit those.
 	*new = *f
@@ -117,18 +117,18 @@ func (f *flxformatter) Clone(options ...HandlerOption) CloneableHandler {
 }
 
 // To support stdlib query functions
-func (f *flxformatter) Prefix() string {
+func (f *stdformatter) Prefix() string {
 	return f.prefix
 }
-func (f *flxformatter) Flags() int {
+func (f *stdformatter) Flags() int {
 	return f.flag
 }
 
 // Generate options to create a new Handler
-func (f *flxformatter) AutoColoring() HandlerOption {
+func (f *stdformatter) AutoColoring() HandlerOption {
 	return func (c CloneableHandler) {
 		var istty bool
-		if o,ok := c.(*flxformatter); ok {
+		if o,ok := c.(*stdformatter); ok {
 			w := o.out
 			if tw, ok := w.(MaybeTtyWriter); ok {
 				istty = tw.IsTty()
@@ -149,22 +149,22 @@ func (f *flxformatter) AutoColoring() HandlerOption {
 // This is a method wrapper around FlagsOpt to be able to have the swapper
 // call it genericly on different formatters to support
 // stdlib operations SetFlags/SetPrefix/SetOutput
-func (f *flxformatter) SetFlags(flags int) HandlerOption {
+func (f *stdformatter) SetFlags(flags int) HandlerOption {
 	return FlagsOpt(flags)
 }
 
-func (f *flxformatter) SetPrefix(prefix string) HandlerOption {
+func (f *stdformatter) SetPrefix(prefix string) HandlerOption {
 	return PrefixOpt(prefix)
 }
 
-func (f *flxformatter) SetOutput(w io.Writer) HandlerOption {
+func (f *stdformatter) SetOutput(w io.Writer) HandlerOption {
 	return OutputOpt(w)
 }
 
 // Formatter Option to set flags
 func FlagsOpt(flags int) HandlerOption {
 	return func (c CloneableHandler) {
-		if h, ok := c.(*flxformatter); ok {
+		if h, ok := c.(*stdformatter); ok {
 			h.flag = flags
 		}
 	}
@@ -173,7 +173,7 @@ func FlagsOpt(flags int) HandlerOption {
 // Formatter option to set Prefix
 func PrefixOpt(prefix string) HandlerOption {
 	return func (c CloneableHandler) {
-		if h, ok := c.(*flxformatter); ok {
+		if h, ok := c.(*stdformatter); ok {
 			h.prefix = prefix
 		}
 	}
@@ -182,7 +182,7 @@ func PrefixOpt(prefix string) HandlerOption {
 // Formatter option so set Output
 func OutputOpt(w io.Writer) HandlerOption {
 	return func (c CloneableHandler) {
-		if h, ok := c.(*flxformatter); ok {
+		if h, ok := c.(*stdformatter); ok {
 			h.out = w
 		}
 	}
@@ -191,7 +191,7 @@ func OutputOpt(w io.Writer) HandlerOption {
 // Formatter option to set LevelPrefixes
 func LevelPrefixOpt(arr *[8]string) HandlerOption {
 	return func (c CloneableHandler) {
-		if h, ok := c.(*flxformatter); ok {
+		if h, ok := c.(*stdformatter); ok {
 			h.pfxarr = arr
 		}
 	}
@@ -219,7 +219,7 @@ func itoa(buf *[]byte, i int, wid int) {
 
 /*********************************************************************/
 
-func (f *flxformatter) Log(e Event) error {
+func (f *stdformatter) Log(e Event) error {
 
 	var now time.Time
 	var file string
@@ -305,7 +305,7 @@ func marshalKeyvals(w io.Writer, keyvals ...interface{}) error {
 }
 
 
-func (l *flxformatter) formatHeader(buf *[]byte, level syslog.Priority, t time.Time, name string, file string, line int) {
+func (l *stdformatter) formatHeader(buf *[]byte, level syslog.Priority, t time.Time, name string, file string, line int) {
 
 
 	if l.flag&(Llevel) != 0 {
