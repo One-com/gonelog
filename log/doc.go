@@ -67,9 +67,9 @@ Calling Fatal*() and Panic*() will in addition to Fataling/panicing log at level
 
 The Print*() methods will log events with a configurable "default" log level - which default to INFO.
 
-Per default the Logger *will* generate log event for Print*() calls even though the log level is lower. The Logger can be set to respect the actual log level also for Print*() statements by the second argument to SetDefaultLevel()
+Per default the Logger *will* generate log event for Print*() calls even though the log level is lower. The Logger can be set to respect the actual log level also for Print*() statements by the second argument to SetPrintLevel()
 
-	log.SetDefaultLevel(syslog.LOG_NOTICE,true)
+	log.SetPrintLevel(syslog.LOG_NOTICE,true)
 
 A new custom Logger with its own behavior and formatting handler can be created:
 
