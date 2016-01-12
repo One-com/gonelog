@@ -21,6 +21,7 @@ func Default() *Logger {
 func init() {
 	// Default Logger is an ordinary stdlib like logger, to be compatible
 	defaultLogger = New(os.Stderr, "", LstdFlags)
+	man = new_manager(defaultLogger)
 }
 
 // Sets the default logger to the minimal mode, where it doesn't log timestamps
