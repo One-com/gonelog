@@ -8,55 +8,45 @@ import (
 // An almost lock-free FIFO buffer
 // Locks are only used when flushing
 
-const bufferMaskBits = 10
-
+const bufferMaskBits = 8 // determines the size of the buffer 
 const bufferSize     = uint64(1) << bufferMaskBits
 const bufferMask     = bufferSize - 1
-const bufferMaxCycle = uint64(1) << (64-bufferMaskBits)
 
-const maxCycle    = 4096
-
-const _ = uint(bufferMaxCycle-maxCycle) // assert at compile time
+const indexStart     = 0
 
 type event struct {
 	seq uint64
 	val uint64 // union of 64-bit numeric values including float64
+	mu sync.Mutex
+	cv *sync.Cond
 }
+
+type dequeueFunc func(f FlusherSink, val uint64)
 
 // A generic stream of values which all have to be propagated to the sink.
 type eventStream struct {
-	name string
-	mtype int // The conceptual type of the meter
-	etype int // the data type of the stored event value
-
 	widx uint64 // index of next free slot
 	ridx uint64 // index of next unread slot
 	slots [bufferSize]event
 
 	flusher *Flusher
 
-	mu   sync.Mutex
-	cond *sync.Cond
+	dequeue dequeueFunc
+
+	name string
+	mtype int
 }
 
 
-func (c *Client) newEventStream(mtype int, name string) (e *eventStream) {
-	e = &eventStream{name: name, mtype: mtype}
-	switch mtype {
-	case MeterGauge, MeterTimer:
-		e.etype = Uint64
-	case MeterCounter, MeterHistogram:
-		e.etype = Int64
-	default:
-		e = nil
-		return
-	}
+func (c *Client) newEventStream(name string, mtype int, dqf dequeueFunc) *eventStream {
+	e := &eventStream{name: name, mtype: mtype, dequeue: dqf, widx: indexStart, ridx: indexStart }
 
 	// make sure first slot is not valid from the start due to zero-value
-	// by invalidating it
-	e.slots[0].seq = 1
-
-	e.cond = sync.NewCond(&e.mu)
+	// and set all sequences to their "old" value
+	for i := range e.slots {
+		e.slots[i].seq = uint64(i)-bufferSize
+		e.slots[i].cv = sync.NewCond(&(e.slots[i].mu))
+	}
 	return e
 }
 
@@ -64,7 +54,7 @@ func (e *eventStream) SetFlusher(f *Flusher) {
 	e.flusher = f
 }
 
-// Empty the buffer
+// Flush as much as possible
 func (e* eventStream) Flush(f FlusherSink) {
 
 	var idx uint64
@@ -74,12 +64,11 @@ func (e* eventStream) Flush(f FlusherSink) {
 	for {
 		idx = ridx & bufferMask
 
+		// test if next un-eaten slot has new data
 		mark := atomic.LoadUint64(&(e.slots[idx].seq))
-		if mark == ridx {
-			// This is a valid slot
-			val := e.slots[idx].val
-			n := Numeric64{Type: e.etype, value: val}
-			f.EmitNumeric64(e.name, e.mtype, n)
+		// either tagged with its slot, or +1 for waited on
+		if mark == ridx || mark == ridx+1 {
+			e.dequeue(f, e.slots[idx].val)
 			ridx++
 		} else {
 			// we've reached a not yet written slot
@@ -96,68 +85,78 @@ func (e *eventStream) Name() string {
 }
 
 func (e *eventStream) Mtype() int {
-	return e.mtype
+       return e.mtype
 }
 
-func (e *eventStream) reset() {
-	// While we are here, we have no writers
-	// They'll all run into maxCycle bein reached
-	// - until we reset widx, then they are unleashed. So do that last
-
-	e.flusher.FlushMeter(e)
-	// buffer should now be empty
-
-	atomic.StoreUint64(&e.ridx,0)
-
-	// atomically let the whole thing run again
-	atomic.StoreUint64(&e.widx,0)
-}
-
-func (e *eventStream) Record(val Numeric64) {
+func (e *eventStream) Enqueue(val uint64) {
 
 	var ridx    uint64
 	var widx    uint64
 	var idx     uint64
-	var cycle   uint64
 
 	// First get a slot
-	for {
-		widx = atomic.AddUint64(&e.widx, 1)
-		widx-- // back up to get our reserved slot
-		idx = widx & bufferMask
-		cycle = widx >> bufferMaskBits
+	widx = atomic.AddUint64(&(e.widx), 1)
+	widx-- // back up to get our reserved slot
+	idx = widx & bufferMask
 
-		if cycle >= maxCycle {
-			e.mu.Lock() // stall all other appenders, but not flusher
-			// let the one putting us over the top reset
-			if idx == 0 && cycle == maxCycle {
-				// flush and reset the whole buffer
-				e.reset()
-				e.cond.Broadcast()
-			} else {
-				e.cond.Wait()
-			}
-			e.mu.Unlock() // and redo slot reservation above
-		} else {
-			break
-		}
-	}
-
+	// we now have widx holding the index we intend to write
 	// Then write the data
-	for {
+	for { 		
 		// Where's the reader? Don't overtake it.
 		ridx = atomic.LoadUint64(&e.ridx)
 
-		if widx - ridx < bufferSize {
+		diff := widx - ridx // unsigned artimetic should work
+		if diff < bufferSize {
 			// We have not catched up
-			e.slots[idx].val = val.value
+			e.slots[idx].val = val
 			// mark the slot written
-			atomic.StoreUint64(&(e.slots[idx].seq),widx)
-			break
-		} else {
-			// do some flushing
-			e.flusher.FlushMeter(e)
-		}
-	}
+			oldmark := atomic.SwapUint64(&(e.slots[idx].seq),widx)
 
+			// test to see if someone was waiting for that mark
+			if oldmark != widx-bufferSize {
+				// ensure we don't signal before the waiter waits
+				e.slots[idx].mu.Lock()
+				e.flusher.FlushMeter(e)
+				e.slots[idx].cv.Broadcast() // wake up time
+				e.slots[idx].mu.Unlock()
+			}
+			break
+		}
+
+		// at the time we read ridx, we could not proceed. That may have changed however, so
+		// we need to make an atomic operation which:
+		// 1) Decides whether to go to sleep and wait for our slot to be ready.
+		// 2) Informs the writer of the slot that we want to be woken.
+		
+		// The slot we are waiting for have sequence 1 buffersize back from rdix,
+		// if it's still not ready
+
+		oldmark := ridx-bufferSize
+
+		idx2 := ridx & bufferMask // from here on we look at the stale read index.
+		e.slots[idx2].mu.Lock()
+		// Try skew the mark to indicate we're waiting
+		mustwait := atomic.CompareAndSwapUint64(&(e.slots[idx2].seq),oldmark,oldmark+1)
+		if mustwait {
+			// We have now at the same time determined that the slot is not ready
+			// and set it to indicate that who ever writes it must signal us.
+
+			e.slots[idx2].cv.Wait()
+
+		} else {
+			// Ok... so the slot is not just "old". It has either been updated
+			// to current, or someone else has skewed the mark and a signal will
+			// be sent to waiters. Find out whether to join the waiters or just try again.
+			actualmark := atomic.LoadUint64(&(e.slots[idx2].seq))
+			if actualmark == oldmark+1 {
+				// skewed - join the waiters.
+				e.slots[idx2].cv.Wait()
+			} else {  // stuff can happen fast
+				// The slot was actually up to date - so advance the reader
+				e.flusher.FlushMeter(e)
+			}
+		}
+		e.slots[idx2].mu.Unlock()
+		
+	}
 }

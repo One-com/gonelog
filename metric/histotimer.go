@@ -11,17 +11,19 @@ func NewHistogram(name string, opts ...MOption) *Histogram {
 }
 
 func (c *Client) NewHistogram(name string, opts ...MOption) *Histogram {
-	t := c.newEventStream(MeterHistogram, name)
+	dequeuef := func(f FlusherSink, val uint64) {
+		n := Numeric64{Type: Int64, value: val}
+		f.EmitNumeric64(name, MeterHistogram, n)
+	}
+	t := c.newEventStream(name, MeterHistogram, dequeuef)
 	c.register(t, opts...)
 	return (*Histogram)(t)
 }
 
-func (t *Histogram) Update(d int64) {
-	e := (*eventStream)(t)
-	n := Numeric64{Type: Int64, value: uint64(d)}
-	e.Record(n)
+func (h *Histogram) Update(d int64) {
+	e := (*eventStream)(h)
+	e.Enqueue(uint64(d))
 }
-
 
 type Timer eventStream
 
@@ -30,13 +32,16 @@ func NewTimer(name string, opts ...MOption) *Timer {
 }
 
 func (c *Client) NewTimer(name string, opts ...MOption) *Timer {
-	t := c.newEventStream(MeterTimer, name)
+ 	dequeuef := func(f FlusherSink, val uint64) {
+		n := Numeric64{Type: Uint64, value: val}
+		f.EmitNumeric64(name, MeterTimer, n)
+	}
+	t := c.newEventStream(name, MeterTimer, dequeuef)
 	c.register(t, opts...)
 	return (*Timer)(t)
 }
 
 func (t *Timer) Update(d time.Duration) {
 	e := (*eventStream)(t)
-	n := Numeric64{Type:Uint64, value: uint64(d.Nanoseconds()/int64(1000000))}
-	e.Record(n)
+	e.Enqueue(uint64(d.Nanoseconds()/int64(1000000)))
 }
