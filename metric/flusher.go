@@ -55,18 +55,18 @@ LOOP:
 // flush a single Meter
 func (f *Flusher) FlushMeter(m Meter) {
 	f.mu.Lock()
-	defer f.mu.Unlock()
 	m.Flush(f.sink)
+	f.mu.Unlock()
 }
 
 // flush all meters
 func (f *Flusher) Flush() {
 	f.mu.Lock()
-	defer f.mu.Unlock()
 	for _, m := range f.meters {
 		m.Flush(f.sink)
 	}
 	f.sink.Flush()
+	f.mu.Unlock()
 }
 
 func (f *Flusher) register(m Meter) {
