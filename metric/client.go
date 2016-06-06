@@ -51,6 +51,28 @@ func NewClient(sink Sink, opts ...MOption) (client *Client) {
 	return
 }
 
+func SetDefaultOptions(opts ...MOption) {
+	c := default_client
+	c.SetOptions(opts...)
+}
+
+// The the Sink factory of the client
+func (c *Client) SetOptions(opts ...MOption) {
+	c.fmu.Lock()
+
+	conf := make(map[string]interface{})
+	for _, o := range opts {
+		o(conf)
+	}
+	if f,ok := conf["flushInterval"]; ok {
+		if ff, ok := f.(time.Duration) ; ok {
+			c.flushInterval = ff
+		}
+	}
+	c.fmu.Unlock()
+}
+
+
 // Set the Sink factory of the default client
 func SetDefaultSink(sink Sink) {
 	c := default_client
