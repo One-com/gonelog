@@ -43,7 +43,7 @@ func NewStatsdSink(addr string, prefix string, maxDatagramsize int) (sink *stats
 
 func (s *statsdSink) FlusherSink() FlusherSink {
 	fs := &statsdFlusherSink{conn:s.conn, max: s.max, prefix: s.prefix + "."}
-	fs.buf = make([]byte,0,1500)
+	fs.buf = make([]byte,0,2048)
 	return fs
 }
 
