@@ -28,6 +28,8 @@ func init() {
 	default_client = NewClient(nil)
 }
 
+// NewClient returns you a client handle directly if you do not want to use the
+// global default client.
 // Create a new metric client with a factory object for the sink.
 // If sink == nil, the client will not emit metrics until a Sink is set.
 func NewClient(sink Sink, opts ...MOption) (client *Client) {
@@ -49,12 +51,14 @@ func NewClient(sink Sink, opts ...MOption) (client *Client) {
 	return
 }
 
+// Set options on the default metric client
 func SetDefaultOptions(opts ...MOption) {
 	c := default_client
 	c.SetOptions(opts...)
 }
 
-// The the Sink factory of the client
+// Set options on a client - like the flush interval for metrics which
+// haven't them selves a fixed flush interval
 func (c *Client) SetOptions(opts ...MOption) {
 	conf := make(map[string]interface{})
 	for _, o := range opts {

@@ -9,11 +9,13 @@ import (
 // wrt. the absolute value.
 // Can be used as a client side maintained counter too.
 
+// The default gauge type using a uint64
 type GaugeUint64 struct {
 	name string
 	val  uint64
 }
 
+// A gauge using an int64 - meaning it can be decremented to negaive values
 type GaugeInt64 struct {
 	name string
 	val  int64
@@ -27,16 +29,18 @@ type GaugeFloat64 struct {
 }
 
 /*==================================================================*/
-// Gauge is alias for GaugeUint64
+// NewGauge is alias for NewGaugeUint64
 func NewGauge(name string, opts ...MOption) *GaugeUint64 {
 	return default_client.NewGauge(name, opts...)
 }
 
+// NewGauge is alias for NewGaugeUint64
 func (c *Client) NewGauge(name string, opts ...MOption) *GaugeUint64 {
 	return c.NewGaugeUint64(name, opts...)
 }
 /*==================================================================*/
 
+// NewGaugeUint64 returns a standard gauge.
 func (c *Client) NewGaugeUint64(name string, opts ...MOption) *GaugeUint64 {
 	g := &GaugeUint64{name: name}
 	c.register(g, opts...)
@@ -60,18 +64,23 @@ func (g *GaugeUint64) Mtype() int {
 	return MeterGauge
 }
 
+// Update the gauge value
 func (g *GaugeUint64) Update(val uint64) {
 	atomic.StoreUint64(&g.val, val)
 }
 
+// Get the gauge value
 func (g *GaugeUint64) Value() uint64 {
 	return atomic.LoadUint64(&g.val)
 }
 
+
+// Increment the gauge value
 func (g *GaugeUint64) Inc(i uint64) {
 	atomic.AddUint64(&g.val, i)
 }
 
+// Decrement the gauge value
 func (g *GaugeUint64) Dec(i int64) {
 	atomic.AddUint64(&g.val, ^uint64(i-1))
 }

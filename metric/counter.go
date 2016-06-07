@@ -4,6 +4,8 @@ import (
 	"sync/atomic"
 )
 
+// Counter is different from a GaugeInt64 in that it is reset to zero every
+// time its flushed - and thus being server-side maintained.
 type Counter struct {
 	name string
 	val  int64

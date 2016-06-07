@@ -31,6 +31,8 @@ type statsdFlusherSink struct {
 }
 
 // A Sink sending data to a UDP statsd server
+// Provide a UDP address, a prefix and a maximum UDP datagram size.
+// 1432 should be a safe size for most nets.
 func NewStatsdSink(addr string, prefix string, maxDatagramsize int) (sink *statsdSink, err error) {
 
 	conn, err := net.DialTimeout("udp", addr, time.Second)

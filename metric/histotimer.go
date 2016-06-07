@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// A histogram is a series of int64 events all sent to the server
 type Histogram eventStream
 
 func NewHistogram(name string, opts ...MOption) *Histogram {
@@ -20,11 +21,14 @@ func (c *Client) NewHistogram(name string, opts ...MOption) *Histogram {
 	return (*Histogram)(t)
 }
 
+// Update the Histogram by registering a new event
 func (h *Histogram) Update(d int64) {
 	e := (*eventStream)(h)
 	e.Enqueue(uint64(d))
 }
 
+// Timer is like Histogram, but the event is a time.Duration.
+// values are remembered as milliseconds
 type Timer eventStream
 
 func NewTimer(name string, opts ...MOption) *Timer {
@@ -41,6 +45,7 @@ func (c *Client) NewTimer(name string, opts ...MOption) *Timer {
 	return (*Timer)(t)
 }
 
+// Register a new duration event.
 func (t *Timer) Update(d time.Duration) {
 	e := (*eventStream)(t)
 	e.Enqueue(uint64(d.Nanoseconds()/int64(1000000)))
