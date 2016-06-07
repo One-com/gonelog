@@ -11,8 +11,9 @@ type Client struct {
 	done *sync.WaitGroup
 
 	fmu sync.Mutex
-	flushInterval time.Duration
 	flushers map[time.Duration]*Flusher
+
+	default_flusher *Flusher
 
 	// A factory for flusher local sinks with a Emit() function
 	sink Sink
@@ -31,23 +32,17 @@ func init() {
 // If sink == nil, the client will not emit metrics until a Sink is set.
 func NewClient(sink Sink, opts ...MOption) (client *Client) {
 
-	conf := make(map[string]interface{})
-	for _, o := range opts {
-		o(conf)
-	}
-
-	var flush time.Duration
-
-	if f,ok := conf["flushInterval"]; ok {
-		if ff, ok := f.(time.Duration) ; ok {
-			flush = ff
-		}
-	}
-
-	client = &Client{sink: sink, flushInterval: flush}
+	client = &Client{sink: sink}
 	client.done =  new(sync.WaitGroup)
 	client.flushers = make(map[time.Duration]*Flusher)
-	client.running = true
+
+	client.default_flusher = newFlusher(0)
+
+	go client.default_flusher.rundyn()
+
+	client.Start()
+	client.SetOptions(opts...)
+
 	return
 }
 
@@ -58,15 +53,15 @@ func SetDefaultOptions(opts ...MOption) {
 
 // The the Sink factory of the client
 func (c *Client) SetOptions(opts ...MOption) {
-	c.fmu.Lock()
-
 	conf := make(map[string]interface{})
 	for _, o := range opts {
 		o(conf)
 	}
+
+	c.fmu.Lock()
 	if f,ok := conf["flushInterval"]; ok {
-		if ff, ok := f.(time.Duration) ; ok {
-			c.flushInterval = ff
+		if d, ok := f.(time.Duration) ; ok {
+			c.default_flusher.set_interval(d)
 		}
 	}
 	c.fmu.Unlock()
@@ -110,6 +105,8 @@ func (c *Client) Start() {
 		return
 	}
 
+	c.default_flusher.stop() // the default flusher flip/flops
+
 	for _,f := range c.flushers {
 		c.done.Add(1)
 		f.run(c.done)
@@ -133,6 +130,8 @@ func (c *Client) Stop() {
 		return
 	}
 
+	c.default_flusher.stop()
+
 	for _,f := range c.flushers {
 		f.stop()
 	}
@@ -144,7 +143,6 @@ func (c *Client) register(m Meter, opts ...MOption) {
 	c.fmu.Lock()
 
 	var f *Flusher
-	var ok bool
 	var flush time.Duration
 
 	conf := make(map[string]interface{})
@@ -154,22 +152,21 @@ func (c *Client) register(m Meter, opts ...MOption) {
 
 	if fi,ok := conf["flushInterval"]; ok {
 		flush = fi.(time.Duration)
+		if f, ok = c.flushers[flush]; !ok {
+			f = newFlusher(flush)
+			if c.sink != nil {
+				fsink := c.sink.FlusherSink()
+				f.setsink(fsink)
+			}
+			c.flushers[flush] = f
+			if c.running {
+				c.done.Add(1)
+				go f.run(c.done)
+			}
+		}
+		f.register(m)
 	} else {
-		flush = c.flushInterval
+		c.default_flusher.register(m)
 	}
-
-	if f, ok = c.flushers[flush]; !ok {
-		f = newFlusher(flush)
-		if c.sink != nil {
-			fsink := c.sink.FlusherSink()
-			f.setsink(fsink)
-		}
-		c.flushers[flush] = f
-		if c.running {
-			c.done.Add(1)
-			go f.run(c.done)
-		}
-	}
-	f.register(m)
 	c.fmu.Unlock()
 }
