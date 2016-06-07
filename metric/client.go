@@ -79,6 +79,7 @@ func (c *Client) SetSink(sink Sink) {
 	c.fmu.Lock()
 
 	c.sink = sink
+	c.default_flusher.setsink(sink.FlusherSink())
 	for _,f := range c.flushers {
 		if sink == nil {
 			fsink := &nilFlusherSink{}
