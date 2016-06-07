@@ -32,7 +32,7 @@ func init() {
 // If sink == nil, the client will not emit metrics until a Sink is set.
 func NewClient(sink Sink, opts ...MOption) (client *Client) {
 
-	client = &Client{sink: sink}
+	client = &Client{}
 	client.done =  new(sync.WaitGroup)
 	client.flushers = make(map[time.Duration]*Flusher)
 
@@ -40,6 +40,9 @@ func NewClient(sink Sink, opts ...MOption) (client *Client) {
 
 	go client.default_flusher.rundyn()
 
+	if sink != nil {
+		client.SetSink(sink)
+	}
 	client.Start()
 	client.SetOptions(opts...)
 
