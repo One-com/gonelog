@@ -3,6 +3,7 @@ package metric
 import (
 	"sync"
 	"sync/atomic"
+	"runtime"
 )
 
 // An almost lock-free FIFO buffer
@@ -99,9 +100,11 @@ func (e *eventStream) Enqueue(val uint64) {
 	widx-- // back up to get our reserved slot
 	idx = widx & bufferMask
 
+	var try int
 	// we now have widx holding the index we intend to write
 	// Then write the data
-	for { 		
+	for {
+		try++
 		// Where's the reader? Don't overtake it.
 		ridx = atomic.LoadUint64(&e.ridx)
 
@@ -123,6 +126,11 @@ func (e *eventStream) Enqueue(val uint64) {
 			break
 		}
 
+		if try == 1 {
+			// try again
+			runtime.Gosched()
+			continue
+		}
 		// at the time we read ridx, we could not proceed. That may have changed however, so
 		// we need to make an atomic operation which:
 		// 1) Decides whether to go to sleep and wait for our slot to be ready.
