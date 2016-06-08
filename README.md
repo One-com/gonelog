@@ -1,6 +1,8 @@
 # gonelog
 
-Golang logging library [![GoDoc](https://godoc.org/github.com/one-com/gonelog/log?status.svg)](https://godoc.org/github.com/one-com/gonelog/log)
+Golang logging and metric library [![GoDoc](https://godoc.org/github.com/one-com/gonelog/log?status.svg)](https://godoc.org/github.com/one-com/gonelog/log)
+
+#### Logging
 
 Package gonelog/log is a drop-in replacement for the standard Go logging library "log" which is fully source code compatible support all the standard library API while at the same time offering advanced logging features through an extended API.
 
@@ -18,7 +20,13 @@ The design goals of gonelog was:
 
 See the examples in api_test.go
 
-## Overview
+#### Metrics
+
+Package gonelog/metric is a library for doing application metrics, primarily aimed at sending data to a statsd server. It supports gauges/counters/timers/histograms/sets in as lightweight a way as possible. A timer uses a mostly lockfree FIFO ringbuffer to take as few mutexes as possible even in parallel access. A gauge is simply an atomically maintained value, only sampled and exported once every flush interval, making the library very fast and usable in hot paths.
+
+Please read the README in the metric folder.
+
+## Logging Overview
 
 Logging is done through *log.Logger objects. They implement all the logging API.
 
