@@ -13,7 +13,7 @@ import (
 // The default log context
 var defaultLogger *Logger
 
-// Returns the default Logger - which is also the root of the name hierachy.
+// Returns the default Logger - which is also the root of the name hierarchy.
 func Default() *Logger {
 	return defaultLogger
 }

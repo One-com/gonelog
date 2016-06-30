@@ -29,11 +29,11 @@ Out of the box the default logger with package level methods works like the stan
 Under the hood the default *log.Logger is however a log context object which can have key/value data and which generate log events with a syslog level and hands them of to a log Handler for formatting and output.
 
 The default Logger supports all this as well, using log level constants source code compatible with the "log/syslog" package through the github.com/One-com/gonelog/syslog package:
- 
+
 	package syslog
 	const (
 		// Severity.
-	
+
 		// From /usr/include/sys/syslog.h.
 		// These are the same on Linux, BSD, and OS X.
 		LOG_EMERG Priority = iota
@@ -99,7 +99,7 @@ The other is to pick an comma-ok style log function:
 
     	if f,ok := l.DEBUGok(); ok  { f("heavy", "fib123", fib(123)) }
 
-Loggers can have names, placing them in a global "/" separated hierachy. 
+Loggers can have names, placing them in a global "/" separated hierarchy.
 
 It's recommended to create a Logger by mentioning it by name using GetLogger("logger/name") - instead of creating unnamed Loggers with NewLogger().
 If such a logger exists you will get it returned, so you can configure it and set the formatter/output. Otherwise a new logger by that name is created. Libraries are encouraged to published the names of their Loggers and to name Loggers after their Go package. This works exactly like the Python "logging" library - with one exception:

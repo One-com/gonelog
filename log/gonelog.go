@@ -58,8 +58,8 @@ const (
 // events and to create sub child loggers with additional K/V data.
 type Logger struct {
 	// This logger is optionally part of a tree based on it's name.
-	//  ("a/b/c") ...placing it in a global hierachy.
-	// The root Logger of the hierachy is not named.
+	//  ("a/b/c") ...placing it in a global hierarchy.
+	// The root Logger of the hierarchy is not named.
 	name string
 
 	// pointer to the Logger config.
@@ -75,13 +75,13 @@ type Logger struct {
 	data    []interface{}
 }
 
-// NewLogger creates a new unamed Logger out side of the named Logger hiearchy.
+// NewLogger creates a new unamed Logger out side of the named Logger hierarchy.
 func NewLogger(level syslog.Priority, handler Handler) (l *Logger) {
 
 	i := defConfig & ^maskLogLvl | (uint32(level) & maskLogLvl)
 	c := &lconfig{config: i}
 	l = &Logger{
-		name: "", // not a part of hierachy
+		name: "", // not a part of hierarchy
 		h:    new_swapper(),
 		cfg:  c,
 	} // nil cparent
