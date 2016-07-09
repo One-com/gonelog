@@ -53,6 +53,7 @@ func ALERT(msg string, kv ...interface{}) {
 		c.log(l, msg, kv...)
 	}
 }
+
 // Requests the default logger to create a log event
 func CRIT(msg string, kv ...interface{}) {
 	c := defaultLogger
@@ -61,6 +62,7 @@ func CRIT(msg string, kv ...interface{}) {
 		c.log(l, msg, kv...)
 	}
 }
+
 // Requests the default logger to create a log event
 func ERROR(msg string, kv ...interface{}) {
 	c := defaultLogger
@@ -69,6 +71,7 @@ func ERROR(msg string, kv ...interface{}) {
 		c.log(l, msg, kv...)
 	}
 }
+
 // Requests the default logger to create a log event
 func WARN(msg string, kv ...interface{}) {
 	c := defaultLogger
@@ -77,6 +80,7 @@ func WARN(msg string, kv ...interface{}) {
 		c.log(l, msg, kv...)
 	}
 }
+
 // Requests the default logger to create a log event
 func NOTICE(msg string, kv ...interface{}) {
 	c := defaultLogger
@@ -85,6 +89,7 @@ func NOTICE(msg string, kv ...interface{}) {
 		c.log(l, msg, kv...)
 	}
 }
+
 // Requests the default logger to create a log event
 func INFO(msg string, kv ...interface{}) {
 	c := defaultLogger
@@ -93,6 +98,7 @@ func INFO(msg string, kv ...interface{}) {
 		c.log(l, msg, kv...)
 	}
 }
+
 // Requests the default logger to create a log event
 func DEBUG(msg string, kv ...interface{}) {
 	c := defaultLogger
@@ -103,19 +109,25 @@ func DEBUG(msg string, kv ...interface{}) {
 }
 
 // If the default Logger is logging at the requested level a function creating such a log event will be returned.
-func ALERTok() (ilog.LogFunc, bool)  { l := defaultLogger; return l.alert, l.Does(syslog.LOG_ALERT) }
+func ALERTok() (ilog.LogFunc, bool) { l := defaultLogger; return l.alert, l.Does(syslog.LOG_ALERT) }
+
 // If the default Logger is logging at the requested level a function creating such a log event will be returned.
-func CRITok() (ilog.LogFunc, bool)   { l := defaultLogger; return l.crit, l.Does(syslog.LOG_CRIT) }
+func CRITok() (ilog.LogFunc, bool) { l := defaultLogger; return l.crit, l.Does(syslog.LOG_CRIT) }
+
 // If the default Logger is logging at the requested level a function creating such a log event will be returned.
-func ERRORok() (ilog.LogFunc, bool)  { l := defaultLogger; return l.error, l.Does(syslog.LOG_ERROR) }
+func ERRORok() (ilog.LogFunc, bool) { l := defaultLogger; return l.error, l.Does(syslog.LOG_ERROR) }
+
 // If the default Logger is logging at the requested level a function creating such a log event will be returned.
-func WARNok() (ilog.LogFunc, bool)   { l := defaultLogger; return l.warn, l.Does(syslog.LOG_WARN) }
+func WARNok() (ilog.LogFunc, bool) { l := defaultLogger; return l.warn, l.Does(syslog.LOG_WARN) }
+
 // If the default Logger is logging at the requested level a function creating such a log event will be returned.
 func NOTICEok() (ilog.LogFunc, bool) { l := defaultLogger; return l.notice, l.Does(syslog.LOG_NOTICE) }
+
 // If the default Logger is logging at the requested level a function creating such a log event will be returned.
-func INFOok() (ilog.LogFunc, bool)   { l := defaultLogger; return l.info, l.Does(syslog.LOG_INFO) }
+func INFOok() (ilog.LogFunc, bool) { l := defaultLogger; return l.info, l.Does(syslog.LOG_INFO) }
+
 // If the default Logger is logging at the requested level a function creating such a log event will be returned.
-func DEBUGok() (ilog.LogFunc, bool)  { l := defaultLogger; return l.debug, l.Does(syslog.LOG_DEBUG) }
+func DEBUGok() (ilog.LogFunc, bool) { l := defaultLogger; return l.debug, l.Does(syslog.LOG_DEBUG) }
 
 //---
 
@@ -123,6 +135,7 @@ func DEBUGok() (ilog.LogFunc, bool)  { l := defaultLogger; return l.debug, l.Doe
 func IncLevel() bool {
 	return defaultLogger.IncLevel()
 }
+
 // Decrease the log level of the default Logger
 func DecLevel() bool {
 	return defaultLogger.DecLevel()
@@ -158,22 +171,27 @@ func Level() syslog.Priority {
 func Flags() int {
 	return defaultLogger.Flags()
 }
+
 // Compatible with the standard library
 func Prefix() string {
 	return defaultLogger.Prefix()
 }
+
 // Compatible with the standard library
 func SetFlags(flag int) {
 	defaultLogger.SetFlags(flag)
 }
+
 // Compatible with the standard library
 func SetPrefix(prefix string) {
 	defaultLogger.SetPrefix(prefix)
 }
+
 // Compatible with the standard library
 func SetOutput(w io.Writer) {
 	defaultLogger.SetOutput(w)
 }
+
 // Compatible with the standard library
 func Fatal(v ...interface{}) {
 	c := defaultLogger
@@ -184,6 +202,7 @@ func Fatal(v ...interface{}) {
 	}
 	os.Exit(1)
 }
+
 // Compatible with the standard library
 func Fatalf(format string, v ...interface{}) {
 	c := defaultLogger
@@ -195,6 +214,7 @@ func Fatalf(format string, v ...interface{}) {
 	os.Exit(1)
 
 }
+
 // Compatible with the standard library
 func Fatalln(v ...interface{}) {
 	c := defaultLogger
@@ -205,6 +225,7 @@ func Fatalln(v ...interface{}) {
 	}
 	os.Exit(1)
 }
+
 // Compatible with the standard library
 func Panic(v ...interface{}) {
 	c := defaultLogger
@@ -215,6 +236,7 @@ func Panic(v ...interface{}) {
 		panic(s)
 	}
 }
+
 // Compatible with the standard library
 func Panicf(format string, v ...interface{}) {
 	c := defaultLogger
@@ -225,6 +247,7 @@ func Panicf(format string, v ...interface{}) {
 		panic(s)
 	}
 }
+
 // Compatible with the standard library
 func Panicln(v ...interface{}) {
 	c := defaultLogger
@@ -244,6 +267,7 @@ func Print(v ...interface{}) {
 		c.log(l, s)
 	}
 }
+
 // Compatible with the standard library
 func Printf(format string, v ...interface{}) {
 	c := defaultLogger
@@ -252,6 +276,7 @@ func Printf(format string, v ...interface{}) {
 		c.log(l, s)
 	}
 }
+
 // Compatible with the standard library
 func Println(v ...interface{}) {
 	c := defaultLogger

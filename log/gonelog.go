@@ -63,7 +63,7 @@ type Logger struct {
 	name string
 
 	// pointer to the Logger config.
-	cfg  *lconfig
+	cfg *lconfig
 
 	// An atomic swappable handle to the loghandler and any name-based parent
 	h *swapper
@@ -72,7 +72,7 @@ type Logger struct {
 	cparent *Logger
 
 	// K/V Attributes common to all events logged ... Using a slice instead of map for speed
-	data    []interface{}
+	data []interface{}
 }
 
 // NewLogger creates a new unamed Logger out side of the named Logger hierarchy.
@@ -142,13 +142,11 @@ func (l *Logger) ApplyHandlerOptions(opt ...HandlerOption) {
 	l.h.ApplyHandlerOptions(opt...)
 }
 
-
 // Autocoloring asks the current Handler to test if there's a TTY attached to an
 // output and if so, apply coloring to the formatter.
 func (l *Logger) AutoColoring() {
 	l.h.AutoColoring()
 }
-
 
 // With ties a sub-Context to the Logger.
 func (l *Logger) With(kv ...interface{}) *Logger {
@@ -247,6 +245,7 @@ func (l *Logger) SetLevel(level syslog.Priority) bool {
 func (l *Logger) SetDefaultLevel(level syslog.Priority, respect bool) bool {
 	return l.SetPrintLevel(level, respect)
 }
+
 // SetPrintLevel sets the level which Print*() methods are logging with.
 // "respect" indicated whether Print*() statements will respect the Logger loglevel
 // or generate events anyway. (with the default log level).
@@ -289,7 +288,6 @@ func (l *Logger) Do(level syslog.Priority) bool {
 func (l *Logger) DoingPrintLevel() (syslog.Priority, bool) {
 	return l.cfg.doing_default_level()
 }
-
 
 // DoingDefaultLevel returns whether a log.Println() would actually
 // generate a log event with the current config.

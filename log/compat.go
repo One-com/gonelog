@@ -27,6 +27,7 @@ func (l *Logger) Fatal(v ...interface{}) {
 	l.log(lvl, s)
 	os.Exit(1)
 }
+
 // Fatalf() compatible with the standard lib logger
 func (l *Logger) Fatalf(format string, v ...interface{}) {
 	lvl := syslog.LOG_ALERT
@@ -34,6 +35,7 @@ func (l *Logger) Fatalf(format string, v ...interface{}) {
 	l.log(lvl, s)
 	os.Exit(1)
 }
+
 // Fatalln() compatible with the standard lib logger
 func (l *Logger) Fatalln(v ...interface{}) {
 	lvl := syslog.LOG_ALERT
@@ -41,6 +43,7 @@ func (l *Logger) Fatalln(v ...interface{}) {
 	l.log(lvl, s)
 	os.Exit(1)
 }
+
 // Panic() compatible with the standard lib logger
 func (l *Logger) Panic(v ...interface{}) {
 	lvl := syslog.LOG_ALERT
@@ -48,6 +51,7 @@ func (l *Logger) Panic(v ...interface{}) {
 	l.log(lvl, s)
 	panic(s)
 }
+
 // Panicf() compatible with the standard lib logger
 func (l *Logger) Panicf(format string, v ...interface{}) {
 	lvl := syslog.LOG_ALERT
@@ -55,6 +59,7 @@ func (l *Logger) Panicf(format string, v ...interface{}) {
 	l.log(lvl, s)
 	panic(s)
 }
+
 // Panicln compatible with the standard lib logger
 func (l *Logger) Panicln(v ...interface{}) {
 	lvl := syslog.LOG_ALERT
@@ -62,6 +67,7 @@ func (l *Logger) Panicln(v ...interface{}) {
 	l.log(lvl, s)
 	panic(s)
 }
+
 // Print() compatible with the standard lib logger
 func (l *Logger) Print(v ...interface{}) {
 	if lvl, ok := l.DoingDefaultLevel(); ok {
@@ -69,6 +75,7 @@ func (l *Logger) Print(v ...interface{}) {
 		l.log(lvl, s)
 	}
 }
+
 // Printf() compatible with the standard lib logger
 func (l *Logger) Printf(format string, v ...interface{}) {
 	if lvl, ok := l.DoingDefaultLevel(); ok {
@@ -76,6 +83,7 @@ func (l *Logger) Printf(format string, v ...interface{}) {
 		l.log(lvl, s)
 	}
 }
+
 // Println() compatible with the standard lib logger
 func (l *Logger) Println(v ...interface{}) {
 	if lvl, ok := l.DoingDefaultLevel(); ok {
@@ -95,10 +103,12 @@ func (l *Logger) Println(v ...interface{}) {
 func (l *Logger) Flags() int {
 	return l.h.Flags()
 }
+
 // Prefix() compatible with the standard lib logger
 func (l *Logger) Prefix() string {
 	return l.h.Prefix()
 }
+
 // SetFlags() compatible with the standard lib logger
 func (l *Logger) SetFlags(flag int) {
 	// First activate needed book keeping
@@ -119,10 +129,12 @@ func (l *Logger) SetFlags(flag int) {
 		l.DoCodeInfo(false)
 	}
 }
+
 // SetPrefix() compatible with the standard lib logger
 func (l *Logger) SetPrefix(prefix string) {
 	l.h.SetPrefix(prefix)
 }
+
 // SetOutput() compatible with the standard lib logger
 func (l *Logger) SetOutput(w io.Writer) {
 	l.h.SetOutput(w)

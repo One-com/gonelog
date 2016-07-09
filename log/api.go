@@ -66,6 +66,7 @@ func (l *Logger) ALERT(msg string, kv ...interface{}) {
 		l.log(lvl, msg, kv...)
 	}
 }
+
 // Log a message and optional KV values at syslog CRIT level.
 func (l *Logger) CRIT(msg string, kv ...interface{}) {
 	lvl := syslog.LOG_CRIT
@@ -73,6 +74,7 @@ func (l *Logger) CRIT(msg string, kv ...interface{}) {
 		l.log(lvl, msg, kv...)
 	}
 }
+
 // Log a message and optional KV values at syslog ERROR level.
 func (l *Logger) ERROR(msg string, kv ...interface{}) {
 	lvl := syslog.LOG_ERROR
@@ -80,6 +82,7 @@ func (l *Logger) ERROR(msg string, kv ...interface{}) {
 		l.log(lvl, msg, kv...)
 	}
 }
+
 // Log a message and optional KV values at syslog WARN level.
 func (l *Logger) WARN(msg string, kv ...interface{}) {
 	lvl := syslog.LOG_WARN
@@ -87,6 +90,7 @@ func (l *Logger) WARN(msg string, kv ...interface{}) {
 		l.log(lvl, msg, kv...)
 	}
 }
+
 // Log a message and optional KV values at syslog NOTICE level.
 func (l *Logger) NOTICE(msg string, kv ...interface{}) {
 	lvl := syslog.LOG_NOTICE
@@ -94,6 +98,7 @@ func (l *Logger) NOTICE(msg string, kv ...interface{}) {
 		l.log(lvl, msg, kv...)
 	}
 }
+
 // Log a message and optional KV values at syslog INFO level.
 func (l *Logger) INFO(msg string, kv ...interface{}) {
 	lvl := syslog.LOG_INFO
@@ -101,6 +106,7 @@ func (l *Logger) INFO(msg string, kv ...interface{}) {
 		l.log(lvl, msg, kv...)
 	}
 }
+
 // Log a message and optional KV values at syslog DEBUG level.
 func (l *Logger) DEBUG(msg string, kv ...interface{}) {
 	lvl := syslog.LOG_DEBUG

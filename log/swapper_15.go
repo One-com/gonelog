@@ -10,7 +10,6 @@ import (
 
 // Indirection of Log() calls through a Handler which can be atomically swapped
 
-
 // Returned by some Log functions (Log()/Output()) if no Handler was found to log an event.
 var ErrNotLogged = errors.New("No handler found to log event")
 

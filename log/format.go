@@ -85,12 +85,12 @@ type stdformatter struct {
 
 // NewMinFormatter creates a standard formatter and applied the supplied options
 // It will default log.LminFlags to provide simple <level>message logging
-func NewMinFormatter(w io.Writer, options ... HandlerOption) *stdformatter {
+func NewMinFormatter(w io.Writer, options ...HandlerOption) *stdformatter {
 	// Default formatter
 	f := &stdformatter{
-		flag: LminFlags,
+		flag:   LminFlags,
 		pfxarr: &syslog_lvlpfx,
-		out:  w,
+		out:    w,
 	}
 	// Apply the options
 	for _, option := range options {
@@ -135,9 +135,9 @@ func (f *stdformatter) Flags() int {
 
 // Generate options to create a new Handler
 func (f *stdformatter) AutoColoring() HandlerOption {
-	return func (c CloneableHandler) {
+	return func(c CloneableHandler) {
 		var istty bool
-		if o,ok := c.(*stdformatter); ok {
+		if o, ok := c.(*stdformatter); ok {
 			w := o.out
 			if tw, ok := w.(MaybeTtyWriter); ok {
 				istty = tw.IsTty()
@@ -172,7 +172,7 @@ func (f *stdformatter) SetOutput(w io.Writer) HandlerOption {
 
 // Formatter Option to set flags
 func FlagsOpt(flags int) HandlerOption {
-	return func (c CloneableHandler) {
+	return func(c CloneableHandler) {
 		if h, ok := c.(*stdformatter); ok {
 			h.flag = flags
 		}
@@ -181,7 +181,7 @@ func FlagsOpt(flags int) HandlerOption {
 
 // Formatter option to set Prefix
 func PrefixOpt(prefix string) HandlerOption {
-	return func (c CloneableHandler) {
+	return func(c CloneableHandler) {
 		if h, ok := c.(*stdformatter); ok {
 			h.prefix = prefix
 		}
@@ -190,7 +190,7 @@ func PrefixOpt(prefix string) HandlerOption {
 
 // Formatter option so set Output
 func OutputOpt(w io.Writer) HandlerOption {
-	return func (c CloneableHandler) {
+	return func(c CloneableHandler) {
 		if h, ok := c.(*stdformatter); ok {
 			h.out = w
 		}
@@ -199,13 +199,12 @@ func OutputOpt(w io.Writer) HandlerOption {
 
 // Formatter option to set LevelPrefixes
 func LevelPrefixOpt(arr *[8]string) HandlerOption {
-	return func (c CloneableHandler) {
+	return func(c CloneableHandler) {
 		if h, ok := c.(*stdformatter); ok {
 			h.pfxarr = arr
 		}
 	}
 }
-
 
 /*********************************************************************/
 
@@ -258,7 +257,6 @@ func (f *stdformatter) Log(e Event) error {
 		}
 		f.formatHeader(&xbuf, e.Lvl, now, e.Name, file, line)
 	}
-
 
 	xbuf = append(xbuf, msg...)
 
@@ -315,9 +313,7 @@ func marshalKeyvals(w io.Writer, keyvals ...interface{}) error {
 	return nil
 }
 
-
 func (l *stdformatter) formatHeader(buf *[]byte, level syslog.Priority, t time.Time, name string, file string, line int) {
-
 
 	if l.flag&(Llevel) != 0 {
 		if l.flag&(Lcolor) != 0 {
@@ -337,7 +333,6 @@ func (l *stdformatter) formatHeader(buf *[]byte, level syslog.Priority, t time.T
 		*buf = append(*buf, name...)
 		*buf = append(*buf, ") "...)
 	}
-
 
 	if l.flag&(Ldate|Ltime|Lmicroseconds) != 0 {
 		if l.flag&LUTC != 0 {

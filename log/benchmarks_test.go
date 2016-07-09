@@ -5,6 +5,7 @@ import (
 	stdlog "log"
 	"testing"
 )
+
 // Performance of the standard library to compare
 func BenchmarkGoStdPrintln(b *testing.B) {
 	const testString = "test"
@@ -22,6 +23,7 @@ func BenchmarkStdPrintln(b *testing.B) {
 		l.Println(testString)
 	}
 }
+
 // Similar using flxformatter
 func BenchmarkFlxPrintln(b *testing.B) {
 	const testString = "test"
@@ -32,6 +34,7 @@ func BenchmarkFlxPrintln(b *testing.B) {
 		l.Println(testString)
 	}
 }
+
 // Try standard lib in parallel
 func BenchmarkParallelGoStdPrintln(b *testing.B) {
 	const testString = "test"
@@ -42,6 +45,7 @@ func BenchmarkParallelGoStdPrintln(b *testing.B) {
 		}
 	})
 }
+
 // similar but with gonelog
 func BenchmarkParallelStdPrintln(b *testing.B) {
 	const testString = "test"
@@ -52,6 +56,7 @@ func BenchmarkParallelStdPrintln(b *testing.B) {
 		}
 	})
 }
+
 // similar but with flxformatter
 func BenchmarkParallelFlxPrintln(b *testing.B) {
 	const testString = "test"
@@ -65,6 +70,7 @@ func BenchmarkParallelFlxPrintln(b *testing.B) {
 		}
 	})
 }
+
 // standard API with minimal mode
 func BenchmarkParallelMinPrintln(b *testing.B) {
 	const testString = "test"
@@ -78,6 +84,7 @@ func BenchmarkParallelMinPrintln(b *testing.B) {
 		}
 	})
 }
+
 // Using ERRORok() to log
 func BenchmarkParallelMinERRORok(b *testing.B) {
 	const testString = "test"
@@ -93,6 +100,7 @@ func BenchmarkParallelMinERRORok(b *testing.B) {
 		}
 	})
 }
+
 // Using DEBUGok() which will not be logged. - showing how cheap debug log statements can be.
 func BenchmarkParallelMinDEBUGok(b *testing.B) {
 	const testString = "test"

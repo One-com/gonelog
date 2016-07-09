@@ -100,7 +100,7 @@ func (l *Logger) calldepthEvent(level syslog.Priority, calldepth int, msg string
 		e.tok = true
 	}
 	if dc {
-		_, file, line, ok := runtime.Caller(calldepth+2)
+		_, file, line, ok := runtime.Caller(calldepth + 2)
 		if ok {
 			e.file = file
 			e.line = line
