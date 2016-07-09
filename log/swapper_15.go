@@ -28,7 +28,7 @@ type valueStruct struct {
 }
 
 // makes sure to initialize a swapper with a value
-func new_swapper() (s *swapper) {
+func newSwapper() (s *swapper) {
 	s = new(swapper)
 	s.val.Store(valueStruct{})
 	return

@@ -37,11 +37,7 @@ type manager struct {
 
 var man *manager
 
-func init() {
-//	man = new_manager(defaultLogger)
-}
-
-func new_manager(l *Logger) *manager {
+func newManager(l *Logger) *manager {
 	m := &manager{root: l}
 	m.registry = make(map[string]interface{})
 	return m

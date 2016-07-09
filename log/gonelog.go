@@ -82,7 +82,7 @@ func NewLogger(level syslog.Priority, handler Handler) (l *Logger) {
 	c := &lconfig{config: i}
 	l = &Logger{
 		name: "", // not a part of hierarchy
-		h:    new_swapper(),
+		h:    newSwapper(),
 		cfg:  c,
 	} // nil cparent
 	l.h.SwapHandler(handler)
@@ -98,7 +98,7 @@ func newLogger(name string) (l *Logger) {
 	c := &lconfig{config: defConfig}
 	l = &Logger{
 		name: name,
-		h:    new_swapper(),
+		h:    newSwapper(),
 		cfg:  c,
 	}
 	return
