@@ -74,6 +74,7 @@ var defaultKeyNames = &EventKeyNames{
 	Line: "_line",
 }
 
+// Time returns the timestamp of an event.
 func (e *event) Time() (t time.Time) {
 	if e.tok {
 		return e.time
@@ -85,6 +86,7 @@ func (e *event) Time() (t time.Time) {
 	}
 }
 
+// FileInfo returns the file and line number of a log event.
 func (e Event) FileInfo() (string, int) {
 	return e.file, e.line
 }

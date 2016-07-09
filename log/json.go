@@ -13,6 +13,7 @@ type jsonformatter struct {
 	keynames *EventKeyNames // Names for basic event fields
 }
 
+// NewJSONFormatter creates a new formatting Handler writing log events as JSON to the supplied Writer.
 func NewJSONFormatter(w io.Writer) *jsonformatter {
 	return &jsonformatter{keynames: defaultKeyNames, out: w}
 }
