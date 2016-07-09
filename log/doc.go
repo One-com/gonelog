@@ -9,7 +9,7 @@ The design goals of gonelog was:
     * Hierarchical contextable logging to have k/v data in context logged automatically.
     * Low resource usage to allow more (debug) log-statements even if they don't result in output.
     * Light syntax to encourage logging on INFO/DEBUG level. (and low cost of doing so)
-    * Compatiblity with http://golang.org/x/net/context
+    * Compatibility with http://golang.org/x/net/context - (deprecated, will be re-considered, now "context" is in stdlib)
     * Flexibility in how log events are output.
     * A fast simple lightweight default in systemd newdaemon style only outputting <level>message
       to standard output.
