@@ -1,6 +1,6 @@
 # gonelog
 
-NOTICE: This repository is no longer maintained. Use http://github.com/One-com/gone/log instead.
+NOTICE: This repository is no longer maintained. Use http://github.com/One-com/gone "log".
 
 Golang logging and metric library [![GoDoc](https://godoc.org/github.com/one-com/gonelog/log?status.svg)](https://godoc.org/github.com/one-com/gonelog/log)
 
